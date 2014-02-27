@@ -197,11 +197,10 @@ input[type=button] {
 }
 
 .newtab-control.newtab-control-sponsored {
-  top: auto;
   bottom: 4px;
-  width: 16px;
   height: 16px;
-  margin: 0 2px;
+  top: auto;
+  width: 16px;
 }
 
 /* DRAG & DROP */
