@@ -184,14 +184,24 @@ input[type=button] {
   }
 }
 
+.newtab-control-sponsored:-moz-locale-dir(rtl),
 .newtab-control-pin:-moz-locale-dir(ltr),
 .newtab-control-block:-moz-locale-dir(rtl) {
   left: 4px;
 }
 
+.newtab-control-sponsored:-moz-locale-dir(ltr),
 .newtab-control-block:-moz-locale-dir(ltr),
 .newtab-control-pin:-moz-locale-dir(rtl) {
   right: 4px;
+}
+
+.newtab-control.newtab-control-sponsored {
+  top: auto;
+  bottom: 4px;
+  width: 16px;
+  height: 16px;
+  margin: 0 2px;
 }
 
 /* DRAG & DROP */
