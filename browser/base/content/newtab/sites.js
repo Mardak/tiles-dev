@@ -230,6 +230,11 @@ Site.prototype = {
    */
   _showPanel: function Site_showPanel(target) {
     if (this._panel.state == "closed") {
+      this._panel.addEventListener("popuphidden", function onPopupHidden(e) {
+        this._panel.removeEventListener("popuphidden", onPopupHidden, false);
+        target.classList.remove("active");
+      }.bind(this));
+      target.classList.add("active");
       this._panel.openPopup(target);
     }
   },
