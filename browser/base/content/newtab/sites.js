@@ -16,6 +16,8 @@ function Site(aNode, aLink) {
 
   this._render();
   this._addEventHandlers();
+
+  this._panel = document.getElementById("sponsored-panel");
 }
 
 Site.prototype = {
@@ -213,12 +215,23 @@ Site.prototype = {
     }
 
     aEvent.preventDefault();
-    if (aEvent.target.classList.contains("newtab-control-block"))
+    if (target.classList.contains("newtab-control-sponsored"))
+      this._showPanel(target);
+    else if (target.classList.contains("newtab-control-block"))
       this.block();
     else if (this.isPinned())
       this.unpin();
     else
       this.pin();
+  },
+
+  /**
+   * Opens sponsored button panel
+   */
+  _showPanel: function Site_showPanel(target) {
+    if (this._panel.state == "closed") {
+      this._panel.openPopup(target);
+    }
   },
 
   /**
