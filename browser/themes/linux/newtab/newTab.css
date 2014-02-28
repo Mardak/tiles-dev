@@ -184,3 +184,11 @@
 .newtab-control-block:active {
   background-position: -192px 0;
 }
+
+.newtab-control-sponsored {
+  background-position: -248px 0;
+}
+
+.newtab-control-sponsored:hover {
+  background-position: -264px 0;
+}
