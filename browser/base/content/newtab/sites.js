@@ -232,9 +232,9 @@ Site.prototype = {
     if (this._sponsoredPanel.state == "closed") {
       this._sponsoredPanel.addEventListener("popuphidden", function onPopupHidden(e) {
         this._sponsoredPanel.removeEventListener("popuphidden", onPopupHidden, false);
-        target.classList.remove("active");
+        target.removeAttribute("panelShown");
       }.bind(this));
-      target.classList.add("active");
+      target.setAttribute("panelShown", "true");
       this._sponsoredPanel.openPopup(target);
     }
   },
