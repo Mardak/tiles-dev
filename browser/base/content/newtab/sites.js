@@ -17,7 +17,7 @@ function Site(aNode, aLink) {
   this._render();
   this._addEventHandlers();
 
-  this._panel = document.getElementById("sponsored-panel");
+  this._sponsoredPanel = document.getElementById("sponsored-panel");
 }
 
 Site.prototype = {
@@ -216,7 +216,7 @@ Site.prototype = {
 
     aEvent.preventDefault();
     if (target.classList.contains("newtab-control-sponsored"))
-      this._showPanel(target);
+      this.showSponsoredPanel(target);
     else if (target.classList.contains("newtab-control-block"))
       this.block();
     else if (this.isPinned())
@@ -228,14 +228,14 @@ Site.prototype = {
   /**
    * Opens sponsored button panel
    */
-  _showPanel: function Site_showPanel(target) {
-    if (this._panel.state == "closed") {
-      this._panel.addEventListener("popuphidden", function onPopupHidden(e) {
-        this._panel.removeEventListener("popuphidden", onPopupHidden, false);
+  showSponsoredPanel: function Site_showSponsoredPanel(target) {
+    if (this._sponsoredPanel.state == "closed") {
+      this._sponsoredPanel.addEventListener("popuphidden", function onPopupHidden(e) {
+        this._sponsoredPanel.removeEventListener("popuphidden", onPopupHidden, false);
         target.classList.remove("active");
       }.bind(this));
       target.classList.add("active");
-      this._panel.openPopup(target);
+      this._sponsoredPanel.openPopup(target);
     }
   },
 
