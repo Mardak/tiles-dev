@@ -145,6 +145,10 @@
   line-height: 24px;
 }
 
+.newtab-site[sponsored] .newtab-title {
+  -moz-padding-end: 24px;
+}
+
 /* CONTROLS */
 .newtab-control {
   width: 24px;
