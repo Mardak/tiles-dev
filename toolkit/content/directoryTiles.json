@@ -1,0 +1,85 @@
+{
+  "en-US": [
+    {
+      "url": "https://www.facebook.com/",
+      "title": "facebook",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "https://www.youtube.com/",
+      "title": "YouTube",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "https://twitter.com/",
+      "title": "Twitter",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "https://www.wikipedia.org/",
+      "title": "Wikipedia",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "https://www.mozilla.org/",
+      "title": "Mozilla Foundation",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "https://www.eff.org/",
+      "title": "Electronic Frontier Foundation",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "http://www.lonelyplanet.com/",
+      "title": "Lonely Planet",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "http://www.bbc.co.uk/",
+      "title": "BBC",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    },
+    {
+      "url": "http://www.nytimes.com/",
+      "title": "The New York Times",
+      "providerData": {
+        "thumbUrl" : "chrome://browser/content/newtab/directorytiles/placeholder.jpg",
+        "bgColor": "#FFF",
+        "type": "sponsored"
+      }
+    }
+  ]
+}
