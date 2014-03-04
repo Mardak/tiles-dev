@@ -92,12 +92,28 @@ function toHash(aValue) {
  * @return  the selected locale or "en-US" if none is selected
  */
 function getLocale() {
-  if (Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE, false))
-    return Services.locale.getLocaleComponentForUserAgent();
-  let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE, Ci.nsIPrefLocalizedString);
-  if (locale)
-    return locale;
-  return Services.prefs.getCharPref(PREF_SELECTED_LOCALE, "en-US");
+  try {
+    if (Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE)) {
+      return Services.locale.getLocaleComponentForUserAgent();
+    }
+  }
+  catch (e) {}
+
+  try {
+    let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE,
+                                                Ci.nsIPrefLocalizedString);
+    if (locale) {
+      return locale;
+    }
+  }
+  catch (e) {}
+
+  try {
+    return Services.prefs.getCharPref(PREF_SELECTED_LOCALE);
+  }
+  catch (e) {}
+
+  return "en-US";
 }
 
 /**
