@@ -28,6 +28,9 @@ XPCOMUtils.defineLazyGetter(this, "Timer", () => {
   return Timer;
 });
 
+XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
+  "resource://gre/modules/NetUtil.jsm");
+
 XPCOMUtils.defineLazyGetter(this, "gPrincipal", function () {
   let uri = Services.io.newURI("about:newtab", null, null);
   return Services.scriptSecurityManager.getNoAppCodebasePrincipal(uri);
@@ -53,6 +56,12 @@ const PREF_NEWTAB_ROWS = "browser.newtabpage.rows";
 // The preference that tells the number of columns of the newtab grid.
 const PREF_NEWTAB_COLUMNS = "browser.newtabpage.columns";
 
+// The preference that tells whether to match the OS locale
+const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
+
+// The preference that tells what locale the user selected
+const PREF_SELECTED_LOCALE = "general.useragent.locale";
+
 // The maximum number of results PlacesProvider retrieves from history.
 const HISTORY_RESULTS_LIMIT = 100;
 
@@ -76,6 +85,19 @@ function toHash(aValue) {
   gCryptoHash.init(gCryptoHash.MD5);
   gCryptoHash.update(value, value.length);
   return gCryptoHash.finish(true);
+}
+
+/**
+ * Gets the currently selected locale for display.
+ * @return  the selected locale or "en-US" if none is selected
+ */
+function getLocale() {
+  if (Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE, false))
+    return Services.locale.getLocaleComponentForUserAgent();
+  let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE, Ci.nsIPrefLocalizedString);
+  if (locale)
+    return locale;
+  return Services.prefs.getCharPref(PREF_SELECTED_LOCALE, "en-US");
 }
 
 /**
@@ -687,6 +709,95 @@ let PlacesProvider = {
 };
 
 /**
+ * Singleton that serves as the provider of directory tiles.
+ * Directory Tiles are a hard-coded set of links shown if a user's tile
+ * inventory is empty.
+ */
+let DirectoryTilesProvider = {
+
+  __links: [],
+
+  get _prefs() Object.freeze({
+    tilesUrl: "browser.newtabpage.directory_tiles_source",
+  }),
+
+  get _tilesUrl() {
+    if (this.__tilesUrl == undefined) {
+      try {
+        this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
+      }
+      catch(e) {
+        Cu.reportError("Error fetching directory tiles url from prefs: " + e);
+      }
+    }
+    return this.__tilesUrl;
+  },
+
+  observe: function DirectoryTilesProvider_observe(aSubject, aTopic, aData) {
+    if (aTopic == "nsPref:changed") {
+      if (aData == this._prefs["tilesUrl"]) {
+        try {
+          this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
+          if (this.__links.length > 0) {
+          }
+        }
+        catch(e) {
+          Cu.reportError("Error fetching directory tiles url from prefs: " + e);
+        }
+      }
+    }
+  },
+
+  _addObserver: function DirectoryTilesProvider_addObserver() {
+    for (let pref of this._prefs) {
+      Services.pref.addObserver(pref, this, false);
+      this._refreshLinks(function(){});
+    }
+  },
+
+  _refreshLinks: function DirectoryTilesProvider_refreshLinks(aCallback) {
+    try {
+      NetUtil.asyncFetch(this._tilesUrl, function(aInputStream, aResult, aRequest) {
+        if (Components.isSuccessCode(aResult)) {
+          try {
+            let data = JSON.parse(
+              NetUtil.readInputStreamToString(
+                aInputStream,
+                aInputStream.available(),
+                {charset: "UTF-8"}
+              )
+            );
+            let locale = getLocale();
+            if (data.hasOwnProperty(locale)) {
+              this.__links = data[locale];
+            }
+          }
+          catch(e) {
+            Cu.reportError("Error parsing DirectoryTiles source: " + e);
+          }
+        }
+        aCallback(this.__links);
+      }.bind(this));
+    }
+    catch(e) {
+      Cu.reportError("Error fetching DirectoryTiles source: " + e);
+    }
+  },
+
+  getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
+    if (this.__links.length == 0) {
+      this._refreshLinks(aCallback);
+    }
+  },
+
+  clear: function() {
+    this.__links = [];
+    this.__tilesUrl = undefined;
+  }
+};
+//TODO: attach observer for when pref changes
+
+/**
  * Singleton that provides access to all links contained in the grid (including
  * the ones that don't fit on the grid). A link is a plain object that looks
  * like this:
@@ -1183,6 +1294,11 @@ this.NewTabUtils = {
     Links.resetCache();
     BlockedLinks.resetCache();
     Links.populateCache(aCallback, true);
+  },
+
+  _providers: {
+    directoryTiles: DirectoryTilesProvider,
+    places: PlacesProvider
   },
 
   links: Links,
