@@ -22,7 +22,11 @@
       <xul:vbox id="sponsored-panel-vbox">
         <xul:description>&newtab.panel.message;</xul:description>
         <xul:hbox>
-          <xul:label class="text-link" href="&newtab.panel.link.url;">&newtab.panel.link.text;</xul:label>
+          <xul:label
+            class="text-link"
+            href="&newtab.panel.link.url;"
+            onclick="document.getElementById('sponsored-panel').hidePopup();"
+          >&newtab.panel.link.text;</xul:label>
         </xul:hbox>
       </xul:vbox>
     </xul:hbox>
