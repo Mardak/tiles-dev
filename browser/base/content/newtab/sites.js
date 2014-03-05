@@ -132,11 +132,21 @@ Site.prototype = {
 
     if (this.isPinned())
       this._updateAttributes(true);
-    // Capture the page if the thumbnail is missing, which will cause page.js
-    // to be notified and call our refreshThumbnail() method.
-    this.captureIfMissing();
-    // but still display whatever thumbnail might be available now.
-    this.refreshThumbnail();
+
+    // In setting background image and color always use provider supplied configuration if available
+    if (this.providerData.imageUri) {
+      this._querySelector(".newtab-thumbnail").style.backgroundImage = "url(" + this.providerData.imageUri + ")";
+    } else {
+      // Capture the page if the thumbnail is missing, which will cause page.js
+      // to be notified and call our refreshThumbnail() method.
+      this.captureIfMissing();
+      // but still display whatever thumbnail might be available now.
+      this.refreshThumbnail();
+    }
+
+    if (this.providerData.bgColor) {
+      this._querySelector(".newtab-thumbnail").style.backgroundColor = this.providerData.bgColor;
+    }
   },
 
   /**
