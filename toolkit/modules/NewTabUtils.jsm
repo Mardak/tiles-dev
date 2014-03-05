@@ -731,10 +731,25 @@ let Links = {
     if (this._links && !aForce) {
       executeCallbacks();
     } else {
-      this._provider.getLinks(function (aLinks) {
-        this._links = aLinks;
+      // XXX DUMMY MERGE LOGIC to take 3 places and rest of directory
+      let places, directory, maybeCallback = () => {
+        if (places == null || directory == null) {
+          return;
+        }
+
+        this._links = places.slice(0, 3).concat(directory);
         executeCallbacks();
-      }.bind(this));
+      }
+
+      this._provider.getLinks(links => {
+        places = links;
+        maybeCallback();
+      });
+
+      DirectoryTilesProvider.getLinks(links => {
+        directory = links;
+        maybeCallback();
+      });
 
       this._addObserver();
     }
