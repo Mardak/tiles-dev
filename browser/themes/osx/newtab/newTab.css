@@ -121,6 +121,11 @@
   background-size: cover;
 }
 
+.newtab-site[sponsored] .newtab-thumbnail {
+  background-position: top center;
+  background-size: auto;
+}
+
 /* TITLES */
 .newtab-title {
   color: #525c66;
