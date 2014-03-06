@@ -789,7 +789,7 @@ let DirectoryTilesProvider = {
     let deferred = Promise.defer();
 
     try {
-      NetUtil.asyncFetch(this._tilesUrl, function(aInputStream, aResult, aRequest) {
+      NetUtil.asyncFetch(this._tilesUrl, (aInputStream, aResult, aRequest) => {
         if (Components.isSuccessCode(aResult)) {
           try {
             let data = JSON.parse(
@@ -815,7 +815,7 @@ let DirectoryTilesProvider = {
         else {
           deferred.reject();
         }
-      }.bind(this));
+      });
     }
     catch(e) {
       Cu.reportError("Error fetching DirectoryTiles source: " + e);
