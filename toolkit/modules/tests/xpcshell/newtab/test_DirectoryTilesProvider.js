@@ -111,7 +111,7 @@ add_task(function test_DirectoryTiles__prefObserver_url() {
   do_check_eq(provider._tilesUrl, exampleUrl);
 
   let newLinks = yield fetchData(provider);
-  isIdentical(links, newLinks);
+  isIdentical(newLinks, links);
 
   provider.reset();
 });

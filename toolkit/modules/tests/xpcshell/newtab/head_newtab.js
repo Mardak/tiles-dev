@@ -3,13 +3,13 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-function isIdentical(expected, actual) {
+function isIdentical(actual, expected) {
   if (expected == null) {
-    do_check_eq(expected, actual);
+    do_check_eq(actual, expected);
   }
   else if (typeof expected == "object") {
     // Make sure all the keys match up
-    do_check_eq(Object.keys(expected).sort() + "", Object.keys(actual).sort());
+    do_check_eq(Object.keys(actual).sort() + "", Object.keys(expected).sort());
 
     // Recursively check each value individually
     Object.keys(expected).forEach(key => {
@@ -17,6 +17,6 @@ function isIdentical(expected, actual) {
     });
   }
   else {
-    do_check_eq(expected, actual);
+    do_check_eq(actual, expected);
   }
 }
