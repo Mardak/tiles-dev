@@ -726,10 +726,10 @@ let DirectoryTilesProvider = {
   __tilesUrl: null,
 
   // links cache
-  __links_cache: [],
+  __linksCache: [],
 
   // refresh flag triggered when there is a change or upon initial load
-  __should_refresh_cache: true,
+  __shouldRefreshCache: true,
 
   get _prefs() Object.freeze({
     tilesUrl: "browser.newtabpage.directory_tiles_source",
@@ -754,7 +754,7 @@ let DirectoryTilesProvider = {
       if (aData == this._prefs["tilesUrl"]) {
         try {
           this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
-          this.__should_refresh_cache = true;
+          this.__shouldRefreshCache = true;
         }
         catch(e) {
           Cu.reportError("Error fetching directory tiles url from prefs: " + e);
@@ -762,7 +762,7 @@ let DirectoryTilesProvider = {
       }
       else if (aData == this._prefs["matchOSLocale"] ||
                aData == this._prefs["prefSelectedLocale"]) {
-        this.__should_refresh_cache = true;
+        this.__shouldRefreshCache = true;
       }
     }
   },
@@ -834,12 +834,12 @@ let DirectoryTilesProvider = {
     return Task.spawn(function DirectoryTilesProvider_getLinks_task() {
       let deferred = Promise.defer();
 
-      if (this.__should_refresh_cache) {
+      if (this.__shouldRefreshCache) {
         try {
           let links = yield this._fetchLinks();
           if (links) {
-            this.__links_cache = links;
-            this.__should_refresh_cache = false;
+            this.__linksCache = links;
+            this.__shouldRefreshCache = false;
           }
         }
         catch(e) {
@@ -853,8 +853,8 @@ let DirectoryTilesProvider = {
 
       yield deferred.promise;
       let clone;
-      if (this.__links_cache) {
-        clone = JSON.parse(JSON.stringify(this.__links_cache));
+      if (this.__linksCache) {
+        clone = JSON.parse(JSON.stringify(this.__linksCache));
       }
       if (aCallback) {
         aCallback(clone)
@@ -870,8 +870,8 @@ let DirectoryTilesProvider = {
    * Return the object to its pre-init state
    */
   reset: function DirectoryTilesProvider_reset() {
-    this.__links_cache = [];
-    this.__should_refresh_cache = true;
+    this.__linksCache = [];
+    this.__shouldRefreshCache = true;
     this.__tilesUrl = undefined;
     this._removePrefsObserver();
   }
