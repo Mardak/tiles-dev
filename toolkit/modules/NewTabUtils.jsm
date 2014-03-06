@@ -12,6 +12,8 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
   "resource://gre/modules/PlacesUtils.jsm");
@@ -733,6 +735,9 @@ let DirectoryTilesProvider = {
 
   __tilesUrl: null,
 
+  // links cache
+  __links_cache: [],
+
   // refresh flag triggered when there is a change or upon initial load
   __should_refresh_cache: true,
 
@@ -786,7 +791,13 @@ let DirectoryTilesProvider = {
     }
   },
 
-  _refreshLinks: function DirectoryTilesProvider_refreshLinks(aCallback) {
+  /**
+   * Fetches the current set of directory links.
+   * @returns a set of links in a promise.
+   */
+  _fetchLinks: function DirectoryTilesProvider_fetchLinks() {
+    let deferred = Promise.defer();
+
     try {
       NetUtil.asyncFetch(this._tilesUrl, function(aInputStream, aResult, aRequest) {
         if (Components.isSuccessCode(aResult)) {
@@ -799,26 +810,66 @@ let DirectoryTilesProvider = {
               )
             );
             let locale = getLocale();
+
+            let links;
             if (data.hasOwnProperty(locale)) {
-              this.__links = data[locale];
+              links = data[locale];
             }
+            deferred.resolve(links);
           }
           catch(e) {
             Cu.reportError("Error parsing DirectoryTiles source: " + e);
+            deferred.reject();
           }
         }
-        aCallback(this.__links);
+        else {
+          deferred.reject();
+        }
       }.bind(this));
     }
     catch(e) {
       Cu.reportError("Error fetching DirectoryTiles source: " + e);
+      deferred.reject();
     }
+
+    return deferred.promise;
   },
 
+  /**
+   * Gets the current set of directory links.
+   * @param aCallback The function that the array of links is passed to.
+   * @returns a promise for when after the aCallback has been invoked
+   */
   getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
-    if (this.__links.length == 0) {
-      this._refreshLinks(aCallback);
-    }
+    return Task.spawn(function DirectoryTilesProvider_getLinks_task() {
+      let deferred = Promise.defer();
+
+      if (this.__should_refresh_cache) {
+        try {
+          let links = yield this._fetchLinks();
+          if (links) {
+            this.__links_cache = links;
+            this.__should_refresh_cache = false;
+          }
+        }
+        catch(e) {
+          // Fetch failed
+        }
+        deferred.resolve();
+      }
+      else {
+        deferred.resolve();
+      }
+
+      yield deferred.promise;
+      let clone;
+      if (this.__links_cache) {
+        clone = JSON.parse(JSON.stringify(this.__links_cache));
+      }
+      if (aCallback) {
+        aCallback(clone)
+      }
+    }.bind(this));
   },
 
   init: function DirectoryTilesProvider_init() {
@@ -835,7 +886,6 @@ let DirectoryTilesProvider = {
     this._removePrefsObserver();
   }
 };
-//TODO: attach observer for when pref changes
 
 /**
  * Singleton that provides access to all links contained in the grid (including
