@@ -731,14 +731,19 @@ let PlacesProvider = {
  */
 let DirectoryTilesProvider = {
 
-  __links: [],
+  __tilesUrl: null,
+
+  // refresh flag triggered when there is a change or upon initial load
+  __should_refresh_cache: true,
 
   get _prefs() Object.freeze({
     tilesUrl: "browser.newtabpage.directory_tiles_source",
+    matchOSLocale: PREF_MATCH_OS_LOCALE,
+    prefSelectedLocale: PREF_SELECTED_LOCALE,
   }),
 
   get _tilesUrl() {
-    if (this.__tilesUrl == undefined) {
+    if (!this.__tilesUrl) {
       try {
         this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
       }
@@ -754,20 +759,30 @@ let DirectoryTilesProvider = {
       if (aData == this._prefs["tilesUrl"]) {
         try {
           this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
-          if (this.__links.length > 0) {
-          }
+          this.__should_refresh_cache = true;
         }
         catch(e) {
           Cu.reportError("Error fetching directory tiles url from prefs: " + e);
         }
       }
+      else if (aData == this._prefs["matchOSLocale"] ||
+               aData == this._prefs["prefSelectedLocale"]) {
+        this.__should_refresh_cache = true;
+      }
     }
   },
 
-  _addObserver: function DirectoryTilesProvider_addObserver() {
-    for (let pref of this._prefs) {
-      Services.pref.addObserver(pref, this, false);
-      this._refreshLinks(function(){});
+  _addPrefsObserver: function DirectoryTilesProvider_addObserver() {
+    for (let pref in this._prefs) {
+      let prefValue = this._prefs[pref];
+      Services.prefs.addObserver(prefValue, this, false);
+    }
+  },
+
+  _removePrefsObserver: function DirectoryTilesProvider_removeObserver() {
+    for (let pref in this._prefs) {
+      let prefValue = this._prefs[pref];
+      Services.prefs.removeObserver(prefValue, this);
     }
   },
 
@@ -806,9 +821,18 @@ let DirectoryTilesProvider = {
     }
   },
 
-  clear: function() {
-    this.__links = [];
+  init: function DirectoryTilesProvider_init() {
+    this._addPrefsObserver();
+  },
+
+  /**
+   * Return the object to its pre-init state
+   */
+  reset: function DirectoryTilesProvider_reset() {
+    this.__links_cache = [];
+    this.__should_refresh_cache = true;
     this.__tilesUrl = undefined;
+    this._removePrefsObserver();
   }
 };
 //TODO: attach observer for when pref changes
@@ -1272,6 +1296,7 @@ this.NewTabUtils = {
   init: function NewTabUtils_init() {
     if (this.initWithoutProviders()) {
       PlacesProvider.init();
+      DirectoryTilesProvider.init();
       Links.addProvider(PlacesProvider);
     }
   },
