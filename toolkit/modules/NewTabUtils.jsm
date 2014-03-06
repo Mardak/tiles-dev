@@ -838,10 +838,9 @@ let DirectoryTilesProvider = {
   /**
    * Gets the current set of directory links.
    * @param aCallback The function that the array of links is passed to.
-   * @returns a promise for when after the aCallback has been invoked
    */
   getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
-    return Task.spawn(function DirectoryTilesProvider_getLinks_task() {
+    Task.spawn(function DirectoryTilesProvider_getLinks_task() {
       let deferred = Promise.defer();
 
       if (this.__shouldRefreshCache) {
