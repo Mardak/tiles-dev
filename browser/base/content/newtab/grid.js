@@ -41,6 +41,13 @@ let gGrid = {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
     this._render();
+
+    let updateHeight = () => {
+      let rows = Math.floor((document.documentElement.clientHeight - 96) / 184);
+      this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + "px";
+    }
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
   },
 
   /**
@@ -90,21 +97,15 @@ let gGrid = {
    * Creates the newtab grid.
    */
   _renderGrid: function Grid_renderGrid() {
-    let row = document.createElementNS(HTML_NAMESPACE, "div");
     let cell = document.createElementNS(HTML_NAMESPACE, "div");
-    row.classList.add("newtab-row");
     cell.classList.add("newtab-cell");
 
     // Clear the grid
     this._node.innerHTML = "";
 
-    // Creates the structure of one row
-    for (let i = 0; i < gGridPrefs.gridColumns; i++) {
-      row.appendChild(cell.cloneNode(true));
-    }
-    // Creates the grid
-    for (let j = 0; j < gGridPrefs.gridRows; j++) {
-      this._node.appendChild(row.cloneNode(true));
+    // Creates all the cells up to the maximum
+    for (let i = 0; i < gGridPrefs.gridColumns * gGridPrefs.gridRows; i++) {
+      this._node.appendChild(cell.cloneNode(true));
     }
 
     // (Re-)initialize all cells.
@@ -154,6 +155,9 @@ let gGrid = {
    * Renders the grid.
    */
   _render: function Grid_render() {
+    this._node.style.height = gGridPrefs.gridRows * 184 + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * 277 + "px";
+
     if (this._shouldRenderGrid()) {
       this._renderGrid();
     }
@@ -162,10 +166,7 @@ let gGrid = {
   },
 
   _shouldRenderGrid : function Grid_shouldRenderGrid() {
-    let rowsLength = this._node.querySelectorAll(".newtab-row").length;
     let cellsLength = this._node.querySelectorAll(".newtab-cell").length;
-
-    return (rowsLength != gGridPrefs.gridRows ||
-            cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns));
+    return cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns);
   }
 };
