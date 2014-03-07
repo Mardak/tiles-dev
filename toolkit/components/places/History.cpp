@@ -1185,7 +1185,10 @@ private:
       if (aPlace.placeId) {
         stmt = mHistory->GetStatement(
           "UPDATE moz_places "
-          "SET frecency = CALCULATE_FRECENCY(:page_id) "
+          "SET frecency = NOTIFY_FRECENCY("
+            "CALCULATE_FRECENCY(:page_id), "
+            "id, url, guid, hidden, last_visit_date"
+          ") "
           "WHERE id = :page_id"
         );
         NS_ENSURE_STATE(stmt);
@@ -1195,7 +1198,9 @@ private:
       else {
         stmt = mHistory->GetStatement(
           "UPDATE moz_places "
-          "SET frecency = CALCULATE_FRECENCY(id) "
+          "SET frecency = NOTIFY_FRECENCY("
+            "CALCULATE_FRECENCY(id), id, url, guid, hidden, last_visit_date"
+          ") "
           "WHERE url = :page_url"
         );
         NS_ENSURE_STATE(stmt);
@@ -2037,13 +2042,14 @@ History::InsertPlace(const VisitData& aPlace)
   NS_ENSURE_SUCCESS(rv, rv);
   rv = URIBinder::Bind(stmt, NS_LITERAL_CSTRING("url"), aPlace.spec);
   NS_ENSURE_SUCCESS(rv, rv);
+  nsString title = aPlace.title;
   // Empty strings should have no title, just like nsNavHistory::SetPageTitle.
-  if (aPlace.title.IsEmpty()) {
+  if (title.IsEmpty()) {
     rv = stmt->BindNullByName(NS_LITERAL_CSTRING("title"));
   }
   else {
-    rv = stmt->BindStringByName(NS_LITERAL_CSTRING("title"),
-                                StringHead(aPlace.title, TITLE_LENGTH_MAX));
+    title.Assign(StringHead(aPlace.title, TITLE_LENGTH_MAX));
+    rv = stmt->BindStringByName(NS_LITERAL_CSTRING("title"), title);
   }
   NS_ENSURE_SUCCESS(rv, rv);
   rv = stmt->BindInt32ByName(NS_LITERAL_CSTRING("typed"), aPlace.typed);
@@ -2064,6 +2070,27 @@ History::InsertPlace(const VisitData& aPlace)
   NS_ENSURE_SUCCESS(rv, rv);
   rv = stmt->Execute();
   NS_ENSURE_SUCCESS(rv, rv);
+
+  // Post an onFrecencyChanged observer notification.
+  nsCOMPtr<mozIStorageStatement> placeIdStmt = GetStatement(
+    "SELECT id "
+    "FROM moz_places "
+    "WHERE rowid = last_insert_rowid() "
+  );
+  NS_ENSURE_STATE(placeIdStmt);
+  mozStorageStatementScoper placeIdScoper(placeIdStmt);
+  bool hasResult;
+  rv = placeIdStmt->ExecuteStep(&hasResult);
+  NS_ENSURE_SUCCESS(rv, rv);
+  NS_ENSURE_TRUE(hasResult, NS_ERROR_UNEXPECTED);
+  int64_t placeId;
+  rv = placeIdStmt->GetInt64(0, &placeId);
+  NS_ENSURE_SUCCESS(rv, rv);
+  const nsNavHistory* navHistory = nsNavHistory::GetConstHistoryService();
+  NS_ENSURE_STATE(navHistory);
+  navHistory->PostFrecencyChangedNotification(placeId, aPlace.spec, frecency,
+                                              guid, aPlace.hidden,
+                                              aPlace.visitTime);
 
   return NS_OK;
 }

@@ -19,6 +19,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
 XPCOMUtils.defineLazyModuleGetter(this, "PageThumbs",
   "resource://gre/modules/PageThumbs.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "BinarySearch",
+  "resource://gre/modules/BinarySearch.jsm");
+
 XPCOMUtils.defineLazyGetter(this, "gPrincipal", function () {
   let uri = Services.io.newURI("about:newtab", null, null);
   return Services.scriptSecurityManager.getNoAppCodebasePrincipal(uri);
@@ -250,6 +253,22 @@ let AllPages = {
       if (aExceptPage != aPage)
         aPage.update();
     });
+  },
+
+  /**
+   * Many individual link changes may happen in a small amount of time over
+   * multiple turns of the event loop.  This method coalesces updates by waiting
+   * a small amount of time for more updating all pages.
+   */
+  scheduleUpdate: function AllPages_scheduleUpdate() {
+    if (this._scheduleUpdateTimer)
+      this._scheduleUpdateTimer.cancel();
+    this._scheduleUpdateTimer = Cc["@mozilla.org/timer;1"].
+                                createInstance(Ci.nsITimer);
+    this._scheduleUpdateTimer.initWithCallback(() => {
+      delete this._scheduleUpdateTimer;
+      this.update();
+    }, 1000, Ci.nsITimer.TYPE_ONE_SHOT);
   },
 
   /**
@@ -505,12 +524,24 @@ let BlockedLinks = {
  */
 let PlacesProvider = {
   /**
+   * Set this to change the maximum number of links the provider will provide.
+   */
+  maxNumLinks: HISTORY_RESULTS_LIMIT,
+
+  /**
+   * Must be called before the provider is used.
+   */
+  init: function PlacesProvider_init() {
+    PlacesUtils.history.addObserver(this, true);
+  },
+
+  /**
    * Gets the current set of links delivered by this provider.
    * @param aCallback The function that the array of links is passed to.
    */
   getLinks: function PlacesProvider_getLinks(aCallback) {
     let options = PlacesUtils.history.getNewQueryOptions();
-    options.maxResults = HISTORY_RESULTS_LIMIT;
+    options.maxResults = this.maxNumLinks;
 
     // Sort by frecency, descending.
     options.sortingMode = Ci.nsINavHistoryQueryOptions.SORT_BY_FRECENCY_DESCENDING
@@ -525,7 +556,16 @@ let PlacesProvider = {
           let url = row.getResultByIndex(1);
           if (LinkChecker.checkLoadURI(url)) {
             let title = row.getResultByIndex(2);
-            links.push({url: url, title: title});
+            let frecency = row.getResultByIndex(12);
+            let placeId = row.getResultByIndex(0);
+            links.push({
+              url: url,
+              title: title,
+              rank: {
+                frecency: frecency,
+                placeID: placeId
+              }
+            });
           }
         }
       },
@@ -544,33 +584,118 @@ let PlacesProvider = {
     let query = PlacesUtils.history.getNewQuery();
     let db = PlacesUtils.history.QueryInterface(Ci.nsPIPlacesDatabase);
     db.asyncExecuteLegacyQueries([query], 1, options, callback);
-  }
+  },
+
+  /**
+   * Registers an object that will be notified when the provider's links change.
+   * @param aObserver An object with the following optional properties:
+   *        * onLinkChanged: A function that's called when a single link
+   *          changes.  It's passed the link object.  Only the link's `url`
+   *          property is guaranteed to be present.  If its `title` property is
+   *          present, then its title has changed, and the property's value is
+   *          the new title.  If its `rank` property is present, then its rank
+   *          within the provider's list of links has changed, and the
+   *          property's value is the new rank.  Note that this link may not
+   *          necessarily have been present in the lists returned from any
+   *          previous calls to getLinks.
+   *        * onManyLinksChanged: A function that's called when many links
+   *          change at once.  You should call getLinks to get the provider's
+   *          new list of links.
+   */
+  addObserver: function PlacesProvider_addObserver(aObserver) {
+    this._observers.push(aObserver);
+  },
+
+  /**
+   * Compares two of the provider's links based on their `rank` properties.
+   * @param aLink1 The first link.
+   * @param aLink2 The second link.
+   * @return A negative number if aLink1 is ordered before aLink2, zero if
+   *         aLink1 and aLink2 have the same ordering, or a positive number if
+   *         aLink1 is ordered after aLink2.
+   */
+  compareLinks: function PlacesProvider_compareLinks(aLink1, aLink2) {
+    if (!aLink1.rank || !aLink2.rank)
+      throw new Error("Comparable links must have ranks");
+    // The implementation of the query in getLinks orders by place ID descending
+    // when two places have the same frecency, so it's important to do the same
+    // here.
+    let cmp = aLink2.rank.frecency - aLink1.rank.frecency;
+    return cmp != 0 ? cmp : aLink2.rank.placeID - aLink1.rank.placeID;
+  },
+
+  _observers: [],
+
+  /**
+   * Called by the history service.
+   */
+  onFrecencyChanged: function PlacesProvider_onFrecencyChanged(aPlaceID, aURI, aNewFrecency, aGUID, aHidden, aLastVisitDate) {
+    // The implementation of the query in getLinks excludes hidden and
+    // unvisited pages, so it's important to exclude them here, too.
+    if (!aHidden && aLastVisitDate) {
+      this._callObservers("onLinkChanged", {
+        url: aURI.spec,
+        rank: {
+          frecency: aNewFrecency,
+          placeID: aPlaceID
+        }
+      });
+    }
+  },
+
+  /**
+   * Called by the history service.
+   */
+  onManyFrecenciesChanged: function PlacesProvider_onManyFrecenciesChanged() {
+    this._callObservers("onManyLinksChanged");
+  },
+
+  /**
+   * Called by the history service.
+   */
+  onTitleChanged: function PlacesProvider_onTitleChanged(aURI, aNewTitle, aGUID) {
+    this._callObservers("onLinkChanged", {
+      url: aURI.spec,
+      title: aNewTitle
+    });
+  },
+
+  _callObservers: function PlacesProvider__callObservers(aMethodName, aArg) {
+    for (let obs of this._observers) {
+      if (typeof(obs[aMethodName]) == "function") {
+        try {
+          obs[aMethodName](aArg);
+        } catch (err) {
+          Cu.reportError(err);
+        }
+      }
+    }
+  },
+
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsINavHistoryObserver,
+                                         Ci.nsISupportsWeakReference]),
 };
 
 /**
  * Singleton that provides access to all links contained in the grid (including
- * the ones that don't fit on the grid). A link is a plain object with title
- * and url properties.
+ * the ones that don't fit on the grid). A link is a plain object with title,
+ * url, and rank properties.
  *
  * Example:
  *
- * {url: "http://www.mozilla.org/", title: "Mozilla"}
+ * {url: "http://www.mozilla.org/", title: "Mozilla", rank: [opaque value]}
+ *
+ * rank is an opaque value meaningful only to the provider that generated the
+ * link. Use provider.compareLinks() to compare two links based on their ranks.
  */
 let Links = {
   /**
-   * The links cache.
+   * Must be called before use.
    */
-  _links: null,
-
-  /**
-   * The default provider for links.
-   */
-  _provider: PlacesProvider,
-
-  /**
-   * List of callbacks waiting for the cache to be populated.
-   */
-  _populateCallbacks: [],
+  init: function Links_init() {
+    this._provider.init();
+    this._provider.addObserver(this);
+  },
 
   /**
    * Populates the cache with fresh links from the current provider.
@@ -601,11 +726,16 @@ let Links = {
       }
     }
 
-    if (this._links && !aForce) {
+    if (this._sortedLinks && !aForce) {
       executeCallbacks();
     } else {
-      this._provider.getLinks(function (aLinks) {
-        this._links = aLinks;
+      this._provider.getLinks(function (links) {
+        this._sortedLinks = links;
+        this._linkMap = links.reduce((map, link) => {
+          if (link)
+            map.set(link.url, link);
+          return map;
+        }, new Map());
         executeCallbacks();
       }.bind(this));
 
@@ -621,7 +751,7 @@ let Links = {
     let pinnedLinks = Array.slice(PinnedLinks.links);
 
     // Filter blocked and pinned links.
-    let links = (this._links || []).filter(function (link) {
+    let links = (this._sortedLinks || []).filter(function (link) {
       return !BlockedLinks.isBlocked(link) && !PinnedLinks.isPinned(link);
     });
 
@@ -641,7 +771,108 @@ let Links = {
    * Resets the links cache.
    */
   resetCache: function Links_resetCache() {
-    this._links = null;
+    this._sortedLinks = null;
+    this._linkMap = null;
+  },
+
+  /**
+   * The links cache.
+   */
+  _links: null,
+
+  /**
+   * The default provider for links.
+   */
+  _provider: PlacesProvider,
+
+  /**
+   * List of callbacks waiting for the cache to be populated.
+   */
+  _populateCallbacks: [],
+
+  /**
+   * The link list cache, sorted by rank ascending.
+   */
+  _sortedLinks: null,
+
+  /**
+   * Maps URLs to link objects for fast lookup.
+   */
+  _linkMap: null,
+
+  /**
+   * Called by the provider to notify us when a single link changes.
+   */
+  onLinkChanged: function Links_onLinkChanged(aLink) {
+    if (!this._sortedLinks)
+      return;
+
+    // Nothing to do if the list is full and the link isn't in it and shouldn't
+    // be in it.
+    if (!this._linkMap.has(aLink.url) &&
+        this._sortedLinks.length &&
+        this._sortedLinks.length == this._provider.maxNumLinks) {
+      let lastLink = this._sortedLinks[this._sortedLinks.length - 1];
+      if (this._provider.compareLinks(lastLink, aLink) < 0)
+        return;
+    }
+
+    let updatePages = false;
+
+    // Update the title in O(1).
+    if ("title" in aLink) {
+      let link = this._linkMap.get(aLink.url);
+      if (link && link.title != aLink.title) {
+        link.title = aLink.title;
+        updatePages = true;
+      }
+    }
+
+    // Update the link's position in O(lg n).
+    if ("rank" in aLink) {
+      let link = this._linkMap.get(aLink.url);
+      if (link) {
+        let idx = this._indexOf(link);
+        if (idx < 0)
+          throw new Error("Link should be in _sortedLinks if in _linkMap");
+        this._sortedLinks.splice(idx, 1);
+        link.rank = aLink.rank;
+      }
+      else {
+        link = aLink;
+        this._linkMap.set(aLink.url, aLink);
+      }
+      let idx = this._insertionIndexOf(link);
+      this._sortedLinks.splice(idx, 0, link);
+      if (this._sortedLinks.length > this._provider.maxNumLinks) {
+        let lastLink = this._sortedLinks.pop();
+        this._linkMap.delete(lastLink.url);
+      }
+      updatePages = true;
+    }
+
+    if (updatePages)
+      AllPages.scheduleUpdate();
+  },
+
+  /**
+   * Called by the provider to notify us when many links change.
+   */
+  onManyLinksChanged: function () {
+    this.populateCache(() => AllPages.scheduleUpdate(), true);
+  },
+
+  _indexOf: function (aLink) {
+    return this._binsearch(aLink, "indexOf");
+  },
+
+  _insertionIndexOf: function (aLink) {
+    return this._binsearch(aLink, "insertionIndexOf");
+  },
+
+  _binsearch: function (aLink, aMethod) {
+    return BinarySearch[aMethod](this._sortedLinks, aLink,
+                                 this._provider.compareLinks.bind(this._provider));
   },
 
   /**
@@ -654,7 +885,7 @@ let Links = {
     if (AllPages.length && AllPages.enabled)
       this.populateCache(function () { AllPages.update() }, true);
     else
-      this._links = null;
+      this.resetCache();
   },
 
   /**
@@ -778,6 +1009,7 @@ this.NewTabUtils = {
       this._initialized = true;
       ExpirationFilter.init();
       Telemetry.init();
+      Links.init();
     }
   },
 

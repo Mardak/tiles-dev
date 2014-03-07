@@ -535,6 +535,84 @@ nsNavHistory::NotifyTitleChange(nsIURI* aURI,
                    nsINavHistoryObserver, OnTitleChanged(aURI, aTitle, aGUID));
 }
 
+void
+nsNavHistory::NotifyFrecencyChanged(int64_t aPlaceId,
+                                    nsIURI* aURI,
+                                    int32_t aNewFrecency,
+                                    const nsACString& aGUID,
+                                    bool aHidden,
+                                    PRTime aLastVisitDate)
+{
+  MOZ_ASSERT(!aGUID.IsEmpty());
+  NOTIFY_OBSERVERS(mCanNotify, mCacheObservers, mObservers,
+                   nsINavHistoryObserver,
+                   OnFrecencyChanged(aPlaceId, aURI, aNewFrecency, aGUID,
+                                     aHidden, aLastVisitDate));
+}
+
+void
+nsNavHistory::NotifyManyFrecenciesChanged()
+{
+  NOTIFY_OBSERVERS(mCanNotify, mCacheObservers, mObservers,
+                   nsINavHistoryObserver,
+                   OnManyFrecenciesChanged());
+}
+
+class FrecencyNotification : public nsRunnable
+{
+public:
+  FrecencyNotification(int64_t aPlaceId,
+                       const nsACString& aSpec,
+                       int32_t aNewFrecency,
+                       const nsACString& aGUID,
+                       bool aHidden,
+                       PRTime aLastVisitDate)
+    : mPlaceId(aPlaceId)
+    , mSpec(aSpec)
+    , mNewFrecency(aNewFrecency)
+    , mGUID(aGUID)
+    , mHidden(aHidden)
+    , mLastVisitDate(aLastVisitDate)
+  {
+  }
+
+  NS_IMETHOD Run()
+  {
+    MOZ_ASSERT(NS_IsMainThread(), "Must be called on the main thread");
+    nsNavHistory* navHistory = nsNavHistory::GetHistoryService();
+    if (navHistory) {
+      nsCOMPtr<nsIURI> uri;
+      (void)NS_NewURI(getter_AddRefs(uri), mSpec);
+      navHistory->NotifyFrecencyChanged(mPlaceId, uri, mNewFrecency, mGUID,
+                                        mHidden, mLastVisitDate);
+    }
+    return NS_OK;
+  }
+
+private:
+  int64_t mPlaceId;
+  nsCString mSpec;
+  int32_t mNewFrecency;
+  nsCString mGUID;
+  bool mHidden;
+  PRTime mLastVisitDate;
+};
+
+void
+nsNavHistory::PostFrecencyChangedNotification(int64_t aPlaceId,
+                                              const nsACString& aSpec,
+                                              int32_t aNewFrecency,
+                                              const nsACString& aGUID,
+                                              bool aHidden,
+                                              PRTime aLastVisitDate) const
+{
+  nsCOMPtr<nsIRunnable> notif = new FrecencyNotification(aPlaceId, aSpec,
+                                                         aNewFrecency, aGUID,
+                                                         aHidden,
+                                                         aLastVisitDate);
+  (void)NS_DispatchToMainThread(notif);
+}
+
 int32_t
 nsNavHistory::GetDaysOfHistory() {
   MOZ_ASSERT(NS_IsMainThread(), "This can only be called on the main thread");
@@ -928,32 +1006,57 @@ nsNavHistory::GetHasHistoryEntries(bool* aHasEntries)
 }
 
 
+class InvalidateAllFrecenciesCallback : public AsyncStatementCallback
+{
+public:
+  InvalidateAllFrecenciesCallback()
+  {
+  }
+
+  NS_IMETHOD HandleCompletion(uint16_t aReason)
+  {
+    if (aReason == REASON_FINISHED) {
+      nsNavHistory *navHistory = nsNavHistory::GetHistoryService();
+      NS_ENSURE_STATE(navHistory);
+      navHistory->NotifyManyFrecenciesChanged();
+    }
+    return NS_OK;
+  }
+};
+
 nsresult
 nsNavHistory::invalidateFrecencies(const nsCString& aPlaceIdsQueryString)
 {
   // Exclude place: queries by setting their frecency to zero.
-  nsAutoCString invalideFrecenciesSQLFragment(
-    "UPDATE moz_places SET frecency = (CASE "
-      "WHEN url BETWEEN 'place:' AND 'place;' "
-      "THEN 0 "
-      "ELSE -1 "
-      "END) "
+  nsAutoCString invalidFrecenciesSQLFragment(
+    "UPDATE moz_places SET frecency = "
+  );
+  if (!aPlaceIdsQueryString.IsEmpty())
+    invalidFrecenciesSQLFragment.AppendLiteral("NOTIFY_FRECENCY(");
+  invalidFrecenciesSQLFragment.AppendLiteral(
+      "(CASE "
+       "WHEN url BETWEEN 'place:' AND 'place;' "
+       "THEN 0 "
+       "ELSE -1 "
+       "END) "
     "WHERE frecency > 0 "
   );
-
   if (!aPlaceIdsQueryString.IsEmpty()) {
-    invalideFrecenciesSQLFragment.AppendLiteral("AND id IN(");
-    invalideFrecenciesSQLFragment.Append(aPlaceIdsQueryString);
-    invalideFrecenciesSQLFragment.AppendLiteral(")");
+    invalidFrecenciesSQLFragment.AppendLiteral("AND id IN(");
+    invalidFrecenciesSQLFragment.Append(aPlaceIdsQueryString);
+    invalidFrecenciesSQLFragment.AppendLiteral(")");
   }
+  nsRefPtr<InvalidateAllFrecenciesCallback> cb =
+    aPlaceIdsQueryString.IsEmpty() ? new InvalidateAllFrecenciesCallback() :
+    nullptr;
 
   nsCOMPtr<mozIStorageAsyncStatement> stmt = mDB->GetAsyncStatement(
-    invalideFrecenciesSQLFragment
+    invalidFrecenciesSQLFragment
   );
   NS_ENSURE_STATE(stmt);
 
   nsCOMPtr<mozIStoragePendingStatement> ps;
-  nsresult rv = stmt->ExecuteAsync(nullptr, getter_AddRefs(ps));
+  nsresult rv = stmt->ExecuteAsync(cb, getter_AddRefs(ps));
   NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
@@ -3078,6 +3181,26 @@ nsNavHistory::Observe(nsISupports *aSubject, const char *aTopic,
 }
 
 
+class DecayFrecencyCallback : public AsyncStatementTelemetryTimer
+{
+public:
+  DecayFrecencyCallback()
+    : AsyncStatementTelemetryTimer(Telemetry::PLACES_IDLE_FRECENCY_DECAY_TIME_MS)
+  {
+  }
+
+  NS_IMETHOD HandleCompletion(uint16_t aReason)
+  {
+    (void)AsyncStatementTelemetryTimer::HandleCompletion(aReason);
+    if (aReason == REASON_FINISHED) {
+      nsNavHistory *navHistory = nsNavHistory::GetHistoryService();
+      NS_ENSURE_STATE(navHistory);
+      navHistory->NotifyManyFrecenciesChanged();
+    }
+    return NS_OK;
+  }
+};
+
 nsresult
 nsNavHistory::DecayFrecency()
 {
@@ -3115,8 +3238,7 @@ nsNavHistory::DecayFrecency()
     deleteAdaptive.get()
   };
   nsCOMPtr<mozIStoragePendingStatement> ps;
-  nsRefPtr<AsyncStatementTelemetryTimer> cb =
-    new AsyncStatementTelemetryTimer(Telemetry::PLACES_IDLE_FRECENCY_DECAY_TIME_MS);
+  nsRefPtr<DecayFrecencyCallback> cb = new DecayFrecencyCallback();
   rv = mDB->MainConn()->ExecuteAsync(stmts, ArrayLength(stmts), cb,
                                      getter_AddRefs(ps));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -4312,7 +4434,9 @@ nsNavHistory::UpdateFrecency(int64_t aPlaceId)
 {
   nsCOMPtr<mozIStorageAsyncStatement> updateFrecencyStmt = mDB->GetAsyncStatement(
     "UPDATE moz_places "
-    "SET frecency = CALCULATE_FRECENCY(:page_id) "
+    "SET frecency = NOTIFY_FRECENCY("
+      "CALCULATE_FRECENCY(:page_id), id, url, guid, hidden, last_visit_date"
+    ") "
     "WHERE id = :page_id"
   );
   NS_ENSURE_STATE(updateFrecencyStmt);
@@ -4345,6 +4469,27 @@ nsNavHistory::UpdateFrecency(int64_t aPlaceId)
 }
 
 
+class FixInvalidFrecenciesCallback : public AsyncStatementCallbackNotifier
+{
+public:
+  FixInvalidFrecenciesCallback()
+    : AsyncStatementCallbackNotifier(TOPIC_FRECENCY_UPDATED)
+  {
+  }
+
+  NS_IMETHOD HandleCompletion(uint16_t aReason)
+  {
+    nsresult rv = AsyncStatementCallbackNotifier::HandleCompletion(aReason);
+    NS_ENSURE_SUCCESS(rv, rv);
+    if (aReason == REASON_FINISHED) {
+      nsNavHistory *navHistory = nsNavHistory::GetHistoryService();
+      NS_ENSURE_STATE(navHistory);
+      navHistory->NotifyManyFrecenciesChanged();
+    }
+    return NS_OK;
+  }
+};
+
 nsresult
 nsNavHistory::FixInvalidFrecencies()
 {
@@ -4355,8 +4500,8 @@ nsNavHistory::FixInvalidFrecencies()
   );
   NS_ENSURE_STATE(stmt);
 
-  nsRefPtr<AsyncStatementCallbackNotifier> callback =
-    new AsyncStatementCallbackNotifier(TOPIC_FRECENCY_UPDATED);
+  nsRefPtr<FixInvalidFrecenciesCallback> callback =
+    new FixInvalidFrecenciesCallback();
   nsCOMPtr<mozIStoragePendingStatement> ps;
   (void)stmt->ExecuteAsync(callback, getter_AddRefs(ps));
 

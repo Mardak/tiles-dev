@@ -418,6 +418,31 @@ public:
                          const nsString& title,
                          const nsACString& aGUID);
 
+  /**
+   * Fires onFrecencyChanged event to nsINavHistoryService observers
+   */
+  void NotifyFrecencyChanged(int64_t aPlaceId,
+                             nsIURI* aURI,
+                             int32_t aNewFrecency,
+                             const nsACString& aGUID,
+                             bool aHidden,
+                             PRTime aLastVisitDate);
+
+  /**
+   * Fires onManyFrecenciesChanged event to nsINavHistoryService observers
+   */
+  void NotifyManyFrecenciesChanged();
+
+  /**
+   * Posts a runnable to the main thread that calls NotifyFrecencyChanged.
+   */
+  void PostFrecencyChangedNotification(int64_t aPlaceId,
+                                       const nsACString& aSpec,
+                                       int32_t aNewFrecency,
+                                       const nsACString& aGUID,
+                                       bool aHidden,
+                                       PRTime aLastVisitDate) const;
+
   bool isBatching() {
     return mBatchLevel > 0;
   }

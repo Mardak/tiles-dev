@@ -159,6 +159,9 @@ function clearHistory(aCallback) {
 
 function fillHistory(aLinks, aCallback) {
   let numLinks = aLinks.length;
+  if (!numLinks)
+    setTimeout(aCallback, 0);
+
   let transitionLink = Ci.nsINavHistoryService.TRANSITION_LINK;
 
   for (let link of aLinks.reverse()) {

@@ -68,7 +68,8 @@ let gPage = {
    */
   update: function Page_update() {
     // The grid might not be ready yet as we initialize it asynchronously.
-    if (gGrid.ready) {
+    // And don't update if the page is visible.
+    if (gGrid.ready && !this.allowBackgroundCaptures) {
       gGrid.refresh();
     }
   },

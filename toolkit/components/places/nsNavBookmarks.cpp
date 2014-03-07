@@ -2842,6 +2842,25 @@ nsNavBookmarks::OnTitleChanged(nsIURI* aURI,
 
 
 NS_IMETHODIMP
+nsNavBookmarks::OnFrecencyChanged(int64_t aPlaceId,
+                                  nsIURI* aURI,
+                                  int32_t aNewFrecency,
+                                  const nsACString& aGUID,
+                                  bool aHidden,
+                                  PRTime aLastVisitDate)
+{
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
+nsNavBookmarks::OnManyFrecenciesChanged()
+{
+  return NS_OK;
+}
+
+
+NS_IMETHODIMP
 nsNavBookmarks::OnPageChanged(nsIURI* aURI,
                               uint32_t aChangedAttribute,
                               const nsAString& aNewValue,
