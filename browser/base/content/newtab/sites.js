@@ -132,20 +132,16 @@ Site.prototype = {
 
     if (this.isPinned())
       this._updateAttributes(true);
+    // Capture the page if the thumbnail is missing, which will cause page.js
+    // to be notified and call our refreshThumbnail() method.
+    this.captureIfMissing();
+    // but still display whatever thumbnail might be available now.
+    this.refreshThumbnail();
 
-    // In setting background image and color always use provider supplied configuration if available
-    if (this.providerData.imageUri) {
-      this._querySelector(".newtab-thumbnail").style.backgroundImage = "url(" + this.providerData.imageUri + ")";
-    } else {
-      // Capture the page if the thumbnail is missing, which will cause page.js
-      // to be notified and call our refreshThumbnail() method.
-      this.captureIfMissing();
-      // but still display whatever thumbnail might be available now.
-      this.refreshThumbnail();
-    }
-
-    if (this.providerData.bgColor) {
-      this._querySelector(".newtab-thumbnail").style.backgroundColor = this.providerData.bgColor;
+    // Set a background color to extend the image if necessary
+    let {bgColor} = this.providerData;
+    if (bgColor) {
+      this._querySelector(".newtab-thumbnail").style.backgroundColor = bgColor;
     }
   },
 
@@ -162,9 +158,9 @@ Site.prototype = {
    * Refreshes the thumbnail for the site.
    */
   refreshThumbnail: function Site_refreshThumbnail() {
-    let thumbnailURL = PageThumbs.getThumbnailURL(this.url);
+    let uri = this.providerData.imageUri || PageThumbs.getThumbnailURL(this.url);
     let thumbnail = this._querySelector(".newtab-thumbnail");
-    thumbnail.style.backgroundImage = "url(" + thumbnailURL + ")";
+    thumbnail.style.backgroundImage = "url(" + uri + ")";
   },
 
   /**
