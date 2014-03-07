@@ -938,13 +938,13 @@ let Links = {
     if (this._sortedLinks && !aForce) {
       executeCallbacks();
     } else {
-      // XXX DUMMY MERGE LOGIC to take 3 places and rest of directory
+      // XXX DUMMY MERGE LOGIC to take 3 places and rest of directory + places
       let places, directory, maybeCallback = () => {
         if (places == null || directory == null) {
           return;
         }
 
-        let links = places.slice(0, 3).concat(directory);
+        let links = places.slice(0, 3).concat(directory).concat(places.slice(3));
         this._sortedLinks = links;
         this._linkMap = links.reduce((map, link) => {
           if (link)
