@@ -93,7 +93,7 @@
   border-color: rgba(8,22,37,.15) rgba(8,22,37,.17) rgba(8,22,37,.19);
 }
 
-.newtab-cell:hover:not(:empty):not([dragged]) {
+.newtab-cell:hover:not(:empty):not([dragged]):not([ignorehover]) {
   border-color: rgba(8,22,37,.25) rgba(8,22,37,.27) rgba(8,22,37,.3);
 }
 
@@ -103,7 +103,7 @@
   transition-property: top, left, opacity, box-shadow, background-color;
 }
 
-.newtab-site:hover,
+.newtab-cell:not([ignorehover]) > .newtab-site:hover,
 .newtab-site[dragged] {
   box-shadow: 0 0 10px rgba(8,22,37,.3);
 }

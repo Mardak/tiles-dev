@@ -175,6 +175,15 @@ Site.prototype = {
     this._node.addEventListener("dragend", this, false);
     this._node.addEventListener("mouseover", this, false);
     this._node.addEventListener("click", this, false);
+
+    // Specially treat the sponsored icon to prevent regular hover effects
+    let sponsored = this._querySelector(".newtab-control-sponsored");
+    sponsored.addEventListener("mouseover", () => {
+      this.cell.node.setAttribute("ignorehover", "true");
+    });
+    sponsored.addEventListener("mouseout", () => {
+      this.cell.node.removeAttribute("ignorehover");
+    });
   },
 
   /**

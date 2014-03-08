@@ -129,7 +129,7 @@ input[type=button] {
 
 .newtab-thumbnail[dragged],
 .newtab-link:-moz-focusring > .newtab-thumbnail,
-.newtab-site:hover > .newtab-link > .newtab-thumbnail {
+.newtab-cell:not([ignorehover]) > .newtab-site:hover > .newtab-link > .newtab-thumbnail {
   opacity: 1;
 }
 
@@ -155,7 +155,7 @@ input[type=button] {
 }
 
 .newtab-control:-moz-focusring,
-.newtab-site:hover > .newtab-control {
+.newtab-cell:not([ignorehover]) > .newtab-site:hover > .newtab-control {
   opacity: 1;
 }
 
