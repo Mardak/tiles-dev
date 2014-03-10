@@ -742,7 +742,7 @@ let DirectoryTilesProvider = {
   __shouldRefreshCache: true,
 
   get _prefs() Object.freeze({
-    tilesUrl: "browser.newtabpage.directory_tiles_source",
+    tilesUrl: "browser.newtabpage.directoryTilesSource",
     matchOSLocale: PREF_MATCH_OS_LOCALE,
     prefSelectedLocale: PREF_SELECTED_LOCALE,
   }),
