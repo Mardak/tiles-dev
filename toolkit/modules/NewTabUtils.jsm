@@ -105,7 +105,7 @@ function getLocale() {
     let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE,
                                                 Ci.nsIPrefLocalizedString);
     if (locale) {
-      return locale;
+      return locale.data;
     }
   }
   catch (e) {}
