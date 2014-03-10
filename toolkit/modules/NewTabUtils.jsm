@@ -779,15 +779,15 @@ let DirectoryTilesProvider = {
 
   _addPrefsObserver: function DirectoryTilesProvider_addObserver() {
     for (let pref in this._prefs) {
-      let prefValue = this._prefs[pref];
-      Services.prefs.addObserver(prefValue, this, false);
+      let prefName = this._prefs[pref];
+      Services.prefs.addObserver(prefName, this, false);
     }
   },
 
   _removePrefsObserver: function DirectoryTilesProvider_removeObserver() {
     for (let pref in this._prefs) {
-      let prefValue = this._prefs[pref];
-      Services.prefs.removeObserver(prefValue, this);
+      let prefName = this._prefs[pref];
+      Services.prefs.removeObserver(prefName, this);
     }
   },
 
