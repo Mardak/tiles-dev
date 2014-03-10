@@ -94,12 +94,15 @@ function toHash(aValue) {
  * @return  the selected locale or "en-US" if none is selected
  */
 function getLocale() {
+  let matchOS;
   try {
-    if (Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE)) {
-      return Services.locale.getLocaleComponentForUserAgent();
-    }
+    matchOS = Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE);
   }
   catch (e) {}
+
+  if (matchOS) {
+    return Services.locale.getLocaleComponentForUserAgent();
+  }
 
   try {
     let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE,
