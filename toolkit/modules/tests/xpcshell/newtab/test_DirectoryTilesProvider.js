@@ -9,7 +9,7 @@
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/NewTabUtils.jsm");
-Cu.import("resource://gre/modules/commonjs/sdk/core/promise.js");
+Cu.import("resource://gre/modules/Promise.jsm");
 
 const console = Cc["@mozilla.org/consoleservice;1"].
   getService(Components.interfaces.nsIConsoleService);
