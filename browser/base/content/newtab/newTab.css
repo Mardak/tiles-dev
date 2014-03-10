@@ -194,6 +194,11 @@ input[type=button] {
   display: none;
 }
 
+/* If panel is shown disable sponsored button click to avoid flicker */
+.newtab-control-sponsored[panelShown] {
+  pointer-events: none;
+}
+
 /* DRAG & DROP */
 
 /*
