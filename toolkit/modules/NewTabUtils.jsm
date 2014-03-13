@@ -902,6 +902,7 @@ let DirectoryTilesProvider = {
     this.__shouldRefreshCache = true;
     this.__tilesUrl = undefined;
     this._removePrefsObserver();
+    this._removeObservers();
   },
 
   addObserver: function DirectoryTilesProvider_addObserver(aObserver) {
@@ -917,6 +918,12 @@ let DirectoryTilesProvider = {
           Cu.reportError(err);
         }
       }
+    }
+  },
+
+  _removeObservers: function() {
+    while(this._observers.length) {
+      this._observers.pop();
     }
   }
 };

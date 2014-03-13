@@ -29,6 +29,27 @@ function run_test() {
   run_next_test();
 }
 
+add_task(function test_DirectoryTiles__linkObservers() {
+  let deferred = Promise.defer();
+  let testObserver = {
+    onManyLinksChanged: function() {
+      deferred.resolve();
+    }
+  }
+
+  let provider = NewTabUtils._providers.directory;
+  provider.init();
+  provider.addObserver(testObserver);
+  do_check_eq(provider._observers.length, 1);
+  Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
+
+  yield deferred.promise; 
+  provider._removeObservers();
+  do_check_eq(provider._observers.length, 0);
+
+  provider.reset();
+});
+
 add_task(function test_DirectoryTiles__tilesUrl() {
   let provider = NewTabUtils._providers.directory;
   let exampleUrl = 'http://example.com';
