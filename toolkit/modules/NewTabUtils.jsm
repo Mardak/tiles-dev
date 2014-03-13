@@ -840,7 +840,13 @@ let DirectoryTilesProvider = {
         try {
           let links = yield this._fetchLinks();
           if (links) {
-            this.__linksCache = links;
+            // XXX DUMMY MERGE LOGIC Set a rank so that PlacesProvider_compareLinks doesn't throw
+            this.__linksCache = links.map(link => {
+              link.rank = {
+                frecency: 1000,
+              };
+              return link;
+            });
             this.__shouldRefreshCache = false;
           }
         }
@@ -932,7 +938,13 @@ let Links = {
     if (this._sortedLinks && !aForce) {
       executeCallbacks();
     } else {
-      this._provider.getLinks(function (links) {
+      // XXX DUMMY MERGE LOGIC to take 3 places and rest of directory + places
+      let places, directory, maybeCallback = () => {
+        if (places == null || directory == null) {
+          return;
+        }
+
+        let links = places.slice(0, 3).concat(directory).concat(places.slice(3));
         this._sortedLinks = links;
         this._linkMap = links.reduce((map, link) => {
           if (link)
@@ -940,7 +952,17 @@ let Links = {
           return map;
         }, new Map());
         executeCallbacks();
-      }.bind(this));
+      }
+
+      this._provider.getLinks(links => {
+        places = links;
+        maybeCallback();
+      });
+
+      DirectoryTilesProvider.getLinks(links => {
+        directory = links;
+        maybeCallback();
+      });
 
       this._addObserver();
     }
