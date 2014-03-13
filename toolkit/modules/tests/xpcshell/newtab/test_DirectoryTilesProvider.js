@@ -30,7 +30,7 @@ function run_test() {
 }
 
 add_task(function test_DirectoryTiles__tilesUrl() {
-  let provider = NewTabUtils._providers['directoryTiles'];
+  let provider = NewTabUtils._providers.directory;
   let exampleUrl = 'http://example.com';
   // tilesUrl is obtained from prefs
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], exampleUrl);
@@ -43,14 +43,14 @@ add_task(function test_DirectoryTiles__tilesUrl() {
 add_task(function test_DirectoryTiles__tilesUrl_data_copy() {
   let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
 
-  let provider = NewTabUtils._providers['directoryTiles'];
+  let provider = NewTabUtils._providers.directory;
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
   do_check_eq(provider._tilesUrl, dataURI);
 
   let links;
 
   links = yield fetchData(provider);
-  do_check_true(links.length == 1);
+  do_check_eq(links.length, 1);
 
   links.push([{"url":"http://example2.com","title":"example 2"}]);
 
@@ -72,7 +72,7 @@ add_task(function test_DirectoryTiles__tilesUrl_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = NewTabUtils._providers['directoryTiles'];
+  let provider = NewTabUtils._providers.directory;
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
   Services.prefs.setCharPref('general.useragent.locale', 'en-US');
 
@@ -95,7 +95,7 @@ add_task(function test_DirectoryTiles__tilesUrl_locale() {
 });
 
 add_task(function test_DirectoryTiles__prefObserver_url() {
-  let provider = NewTabUtils._providers['directoryTiles'];
+  let provider = NewTabUtils._providers.directory;
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
 
   // set up the observer
@@ -117,7 +117,7 @@ add_task(function test_DirectoryTiles__prefObserver_url() {
 });
 
 add_task(function test_DirectoryTiles_getLinks() {
-  let provider = NewTabUtils._providers['directoryTiles'];
+  let provider = NewTabUtils._providers.directory;
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
 
   let links = yield fetchData(provider);

@@ -75,6 +75,10 @@ const TOPIC_GATHER_TELEMETRY = "gather-telemetry";
 
 // The amount of time we wait while coalescing updates for hidden pages.
 const SCHEDULE_UPDATE_TIMEOUT_MS = 1000;
+//
+// The threshold when a Places link becomes a history tile and pushes out a
+// directory tile.
+const TILES_FRECENCY_THRESHOLD = 1000;
 
 /**
  * Calculate the MD5 hash for a string.
@@ -744,6 +748,8 @@ let DirectoryTilesProvider = {
   // refresh flag triggered when there is a change or upon initial load
   __shouldRefreshCache: true,
 
+  _observers: [],
+
   get _prefs() Object.freeze({
     tilesUrl: "browser.newtabpage.directoryTilesSource",
     matchOSLocale: PREF_MATCH_OS_LOCALE,
@@ -768,6 +774,7 @@ let DirectoryTilesProvider = {
         try {
           this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
           this.__shouldRefreshCache = true;
+          this._callObservers("onManyLinksChanged");
         }
         catch(e) {
           Cu.reportError("Error fetching directory tiles url from prefs: " + e);
@@ -776,6 +783,7 @@ let DirectoryTilesProvider = {
       else if (aData == this._prefs["matchOSLocale"] ||
                aData == this._prefs["prefSelectedLocale"]) {
         this.__shouldRefreshCache = true;
+        this._callObservers("onManyLinksChanged");
       }
     }
   },
@@ -821,18 +829,16 @@ let DirectoryTilesProvider = {
             deferred.resolve(links);
           }
           catch(e) {
-            Cu.reportError("Error parsing DirectoryTiles source: " + e);
-            deferred.reject();
+            deferred.reject(e);
           }
         }
         else {
-          deferred.reject();
+          deferred.reject(new Error("the fetch of " + this._tilesUrl + "was unsuccessful"));
         }
       });
     }
     catch(e) {
-      Cu.reportError("Error fetching DirectoryTiles source: " + e);
-      deferred.reject();
+      deferred.reject(e);
     }
 
     return deferred.promise;
@@ -850,12 +856,22 @@ let DirectoryTilesProvider = {
         try {
           let links = yield this._fetchLinks();
           if (links) {
-            this.__linksCache = links;
+            /* set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD
+             * is reached by a history tile, the last tile is pushed out
+             */
+            let incrementor = links.length-1;
+            this.__linksCache = links.map(link => {
+              link.frecency = TILES_FRECENCY_THRESHOLD + incrementor,
+              link.lastVisitDate = incrementor;
+              --incrementor;
+              return link;
+            });
             this.__shouldRefreshCache = false;
           }
         }
         catch(e) {
           // Fetch failed
+          Cu.reportError(e);
         }
         deferred.resolve();
       }
@@ -886,6 +902,22 @@ let DirectoryTilesProvider = {
     this.__shouldRefreshCache = true;
     this.__tilesUrl = undefined;
     this._removePrefsObserver();
+  },
+
+  addObserver: function DirectoryTilesProvider_addObserver(aObserver) {
+    this._observers.push(aObserver);
+  },
+
+  _callObservers: function DirectoryTilesProvider__callObservers(aMethodName, aArg) {
+    for (let obs of this._observers) {
+      if (typeof(obs[aMethodName]) == "function") {
+        try {
+          obs[aMethodName](this, aArg);
+        } catch (err) {
+          Cu.reportError(err);
+        }
+      }
+    }
   }
 };
 
@@ -1390,7 +1422,7 @@ this.NewTabUtils = {
   },
 
   _providers: {
-    directoryTiles: DirectoryTilesProvider,
+    directory: DirectoryTilesProvider,
     places: PlacesProvider
   },
 
