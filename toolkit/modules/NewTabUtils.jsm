@@ -859,11 +859,9 @@ let DirectoryTilesProvider = {
             /* set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD
              * is reached by a history tile, the last tile is pushed out
              */
-            let incrementor = links.length-1;
-            this.__linksCache = links.map(link => {
-              link.frecency = TILES_FRECENCY_THRESHOLD + incrementor,
-              link.lastVisitDate = incrementor;
-              --incrementor;
+            this.__linksCache = links.map((link, position) => {
+              link.frecency = TILES_FRECENCY_THRESHOLD;
+              link.lastVisitDate = links.length - position;
               return link;
             });
             this.__shouldRefreshCache = false;
