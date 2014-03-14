@@ -168,13 +168,13 @@ let gGrid = {
    * Renders the grid.
    */
   _render: function Grid_render() {
-    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT + "px";
-    this._node.style.maxWidth = gGridPrefs.gridColumns * CELL_WIDTH + "px";
-
     if (this._shouldRenderGrid()) {
       this._renderGrid();
       this._updateHeight();
     }
+
+    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * CELL_WIDTH + "px";
 
     this._renderSites();
   },
