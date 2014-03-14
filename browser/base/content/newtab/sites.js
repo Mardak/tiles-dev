@@ -40,11 +40,6 @@ Site.prototype = {
   get title() this.link.title,
 
   /**
-   * The provider data information of the site's link.
-   */
-  get providerData() (this.link.providerData || {}),
-
-  /**
    * The site's parent cell.
    */
   get cell() {
@@ -129,15 +124,11 @@ Site.prototype = {
     let title = this.title || url;
     let tooltip = (title == url ? title : title + "\n" + url);
 
-    // set site "sponsored" attribute
-    if (this.providerData.type == "sponsored") {
-      this._node.setAttribute("sponsored", "true");
-    }
-
     let link = this._querySelector(".newtab-link");
     link.setAttribute("title", tooltip);
     link.setAttribute("href", url);
     this._querySelector(".newtab-title").textContent = title;
+    this.node.setAttribute("type", this.link.type);
 
     if (this.isPinned())
       this._updateAttributes(true);

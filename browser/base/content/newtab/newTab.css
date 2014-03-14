@@ -189,7 +189,7 @@ input[type=button] {
   width: 16px;
 }
 
-.newtab-site:not([sponsored]) .newtab-control-sponsored {
+.newtab-site:not([type=sponsored]) .newtab-control-sponsored {
   display: none;
 }
 

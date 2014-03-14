@@ -124,7 +124,7 @@
   font-size: 13px;
 }
 
-.newtab-site[sponsored] .newtab-title {
+.newtab-site[type=sponsored] .newtab-title {
   -moz-padding-end: 24px;
 }
 
