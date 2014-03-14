@@ -741,9 +741,6 @@ let DirectoryTilesProvider = {
 
   __tilesUrl: null,
 
-  // links cache
-  __linksCache: [],
-
   _observers: [],
 
   get _prefs() Object.freeze({
