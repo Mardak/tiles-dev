@@ -5,6 +5,14 @@
 #endif
 
 /**
+ * Define various fixed dimensions
+ */
+const CELL_HEIGHT = 16 + 1 + 150 + 1 + 16; // margin, border, height, border, margin
+const CELL_WIDTH = 16 + 1 + 243 + 1 + 16; // margin, border, width, border, margin
+const GRID_BOTTOM_MARGIN = 20 - 16; // line-height, margin
+const GRID_TOP_MARGIN = 80 + 16; // max-margin-top, margin
+
+/**
  * This singleton represents the grid that contains all sites.
  */
 let gGrid = {
@@ -160,8 +168,8 @@ let gGrid = {
    * Renders the grid.
    */
   _render: function Grid_render() {
-    this._node.style.height = gGridPrefs.gridRows * 184 + "px";
-    this._node.style.maxWidth = gGridPrefs.gridColumns * 277 + "px";
+    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * CELL_WIDTH + "px";
 
     if (this._shouldRenderGrid()) {
       this._renderGrid();
@@ -180,7 +188,9 @@ let gGrid = {
    * Make sure the correct number of rows are visible
    */
   _updateHeight: function Grid_updateHeight() {
-    let rows = Math.floor((document.documentElement.clientHeight - 96) / 184);
-    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + 4 + "px";
+    let rows = Math.floor((document.documentElement.clientHeight -
+                           GRID_TOP_MARGIN) / CELL_HEIGHT);
+    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) *
+                                 CELL_HEIGHT + GRID_BOTTOM_MARGIN + "px";
   }
 };
