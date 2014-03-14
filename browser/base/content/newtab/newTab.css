@@ -194,14 +194,6 @@ input[type=button] {
   display: none;
 }
 
-/**
- * Disable sponsored button mouse events if the panel is shown.
- * Otherwise the panel hides and pops up again on button click.
- */
-.newtab-control-sponsored[panelShown] {
-  pointer-events: none;
-}
-
 /* DRAG & DROP */
 
 /*
