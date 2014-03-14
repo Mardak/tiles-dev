@@ -804,23 +804,11 @@ let DirectoryTilesProvider = {
       NetUtil.asyncFetch(this._tilesUrl, (aInputStream, aResult, aRequest) => {
         if (Components.isSuccessCode(aResult)) {
           try {
-            let data = JSON.parse(
-              NetUtil.readInputStreamToString(
-                aInputStream,
-                aInputStream.available(),
-                {charset: "UTF-8"}
-              )
-            );
+            let json = NetUtil.readInputStreamToString(aInputStream,
+                                                       aInputStream.available(),
+                                                       {charset: "UTF-8"});
             let locale = getLocale();
-
-            let links;
-            if (data.hasOwnProperty(locale)) {
-              links = data[locale];
-            }
-            else {
-              links = [];
-            }
-            deferred.resolve(links);
+            deferred.resolve(JSON.parse(json)[locale] || []);
           }
           catch(e) {
             deferred.reject(e);
