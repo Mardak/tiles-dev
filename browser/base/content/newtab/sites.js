@@ -153,9 +153,9 @@ Site.prototype = {
    * Refreshes the thumbnail for the site.
    */
   refreshThumbnail: function Site_refreshThumbnail() {
-    let uri = this.link.imageURI || PageThumbs.getThumbnailURL(this.url);
     let thumbnail = this._querySelector(".newtab-thumbnail");
     thumbnail.style.backgroundColor = this.link.bgColor;
+    let uri = this.link.imageURI || PageThumbs.getThumbnailURL(this.url);
     thumbnail.style.backgroundImage = "url(" + uri + ")";
   },
 
