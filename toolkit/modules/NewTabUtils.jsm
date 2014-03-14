@@ -832,23 +832,14 @@ let DirectoryTilesProvider = {
    */
   getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
     this._fetchLinks().then(rawLinks => {
-      let links;
-
-      if (rawLinks) {
-        /* set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD
-         * is reached by a history tile, the last tile is pushed out
-         */
-        links = rawLinks.map((link, position) => {
-          link.frecency = TILES_FRECENCY_THRESHOLD;
-          link.lastVisitDate = rawLinks.length - position;
-          return link;
-        });
-      }
-
-      aCallback(links);
+      // Set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD is
+      // reached by a history tile, the last tile is pushed out
+      aCallback(rawLinks.map((link, position) => {
+        link.frecency = TILES_FRECENCY_THRESHOLD;
+        link.lastVisitDate = rawLinks.length - position;
+        return link;
+      }));
     }, error => {
-      // report this error
-
       Cu.reportError(error);
       aCallback([]);
     });
