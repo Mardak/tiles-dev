@@ -181,6 +181,6 @@ let gGrid = {
    */
   _updateHeight: function Grid_updateHeight() {
     let rows = Math.floor((document.documentElement.clientHeight - 96) / 184);
-    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + "px";
+    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + 4 + "px";
   }
 };
