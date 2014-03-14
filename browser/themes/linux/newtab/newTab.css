@@ -117,7 +117,7 @@
   background-size: cover;
 }
 
-.newtab-site[sponsored] .newtab-thumbnail {
+.newtab-site[type=sponsored] .newtab-thumbnail {
   background-position: top center;
   background-size: auto;
 }
