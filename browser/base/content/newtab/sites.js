@@ -139,7 +139,7 @@ Site.prototype = {
     this.refreshThumbnail();
 
     // Set a background color to extend the image if necessary
-    let {bgColor} = this.providerData;
+    let {bgColor} = this.link;
     if (bgColor) {
       this._querySelector(".newtab-thumbnail").style.backgroundColor = bgColor;
     }
@@ -150,15 +150,16 @@ Site.prototype = {
    * existing thumbnail and the page allows background captures.
    */
   captureIfMissing: function Site_captureIfMissing() {
-    if (gPage.allowBackgroundCaptures && !this.providerData.imageUri)
+    if (gPage.allowBackgroundCaptures && !this.link.imageURI) {
       BackgroundPageThumbs.captureIfMissing(this.url);
+    }
   },
 
   /**
    * Refreshes the thumbnail for the site.
    */
   refreshThumbnail: function Site_refreshThumbnail() {
-    let uri = this.providerData.imageUri || PageThumbs.getThumbnailURL(this.url);
+    let uri = this.link.imageURI || PageThumbs.getThumbnailURL(this.url);
     let thumbnail = this._querySelector(".newtab-thumbnail");
     thumbnail.style.backgroundImage = "url(" + uri + ")";
   },
