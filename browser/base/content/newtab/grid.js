@@ -41,13 +41,7 @@ let gGrid = {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
     this._render();
-
-    let updateHeight = () => {
-      let rows = Math.floor((document.documentElement.clientHeight - 96) / 184);
-      this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + "px";
-    }
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
+    window.addEventListener("resize", this);
   },
 
   /**
@@ -60,6 +54,17 @@ let gGrid = {
     let node = aCell.node;
     node.appendChild(this._siteFragment.cloneNode(true));
     return new Site(node.firstElementChild, aLink);
+  },
+
+  /**
+   * Handles all grid events.
+   */
+  handleEvent: function Grid_handleEvent(aEvent) {
+    switch (aEvent.type) {
+      case "resize":
+        this._updateHeight();
+        break;
+    }
   },
 
   /**
@@ -160,6 +165,7 @@ let gGrid = {
 
     if (this._shouldRenderGrid()) {
       this._renderGrid();
+      this._updateHeight();
     }
 
     this._renderSites();
@@ -168,5 +174,13 @@ let gGrid = {
   _shouldRenderGrid : function Grid_shouldRenderGrid() {
     let cellsLength = this._node.querySelectorAll(".newtab-cell").length;
     return cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns);
+  },
+
+  /**
+   * Make sure the correct number of rows are visible
+   */
+  _updateHeight: function Grid_updateHeight() {
+    let rows = Math.floor((document.documentElement.clientHeight - 96) / 184);
+    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) * 184 + "px";
   }
 };
