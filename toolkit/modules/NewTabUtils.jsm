@@ -820,6 +820,9 @@ let DirectoryTilesProvider = {
             if (data.hasOwnProperty(locale)) {
               links = data[locale];
             }
+            else {
+              links = [];
+            }
             deferred.resolve(links);
           }
           catch(e) {

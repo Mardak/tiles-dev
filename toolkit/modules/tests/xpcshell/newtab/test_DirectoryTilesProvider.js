@@ -154,3 +154,14 @@ add_task(function test_DirectoryTiles_getLinks_invalid() {
   do_check_eq(links.length, 0);
   provider.reset();
 });
+
+add_task(function test_DirectoryTiles_getLinks_noLocaleData() {
+  let provider = NewTabUtils._providers.directory;
+  Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
+  let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
+  Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
+
+  let links = yield fetchData(provider);
+  do_check_eq(links.length, 0);
+  provider.reset();
+});
