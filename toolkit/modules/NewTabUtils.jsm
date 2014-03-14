@@ -860,17 +860,12 @@ let DirectoryTilesProvider = {
         });
       }
 
-      if (aCallback) {
-        aCallback(links);
-      }
+      aCallback(links);
     }, error => {
       // report this error
 
       Cu.reportError(error);
-
-      if (aCallback) {
-        aCallback([]);
-      }
+      aCallback([]);
     });
   },
 
