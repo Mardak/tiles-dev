@@ -132,7 +132,7 @@ add_task(function test_DirectoryTiles__prefObserver_url() {
   do_check_eq(provider._tilesUrl, exampleUrl);
 
   let newLinks = yield fetchData(provider);
-  isIdentical(newLinks, links);
+  isIdentical(newLinks, []);
 
   provider.reset();
 });
@@ -143,5 +143,14 @@ add_task(function test_DirectoryTiles_getLinks() {
 
   let links = yield fetchData(provider);
   do_check_true(links.length > 0);
+  provider.reset();
+});
+
+add_task(function test_DirectoryTiles_getLinks_invalid() {
+  let provider = NewTabUtils._providers.directory;
+  Services.prefs.setCharPref(provider._prefs['tilesUrl'], "http://example.com");
+
+  let links = yield fetchData(provider);
+  do_check_eq(links.length, 0);
   provider.reset();
 });

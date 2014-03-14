@@ -12,7 +12,6 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
@@ -745,9 +744,6 @@ let DirectoryTilesProvider = {
   // links cache
   __linksCache: [],
 
-  // refresh flag triggered when there is a change or upon initial load
-  __shouldRefreshCache: true,
-
   _observers: [],
 
   get _prefs() Object.freeze({
@@ -773,7 +769,6 @@ let DirectoryTilesProvider = {
       if (aData == this._prefs["tilesUrl"]) {
         try {
           this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
-          this.__shouldRefreshCache = true;
           this._callObservers("onManyLinksChanged");
         }
         catch(e) {
@@ -782,7 +777,6 @@ let DirectoryTilesProvider = {
       }
       else if (aData == this._prefs["matchOSLocale"] ||
                aData == this._prefs["prefSelectedLocale"]) {
-        this.__shouldRefreshCache = true;
         this._callObservers("onManyLinksChanged");
       }
     }
@@ -849,43 +843,32 @@ let DirectoryTilesProvider = {
    * @param aCallback The function that the array of links is passed to.
    */
   getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
-    Task.spawn(function DirectoryTilesProvider_getLinks_task() {
-      let deferred = Promise.defer();
+    this._fetchLinks().then(rawLinks => {
+      let links;
 
-      if (this.__shouldRefreshCache) {
-        try {
-          let links = yield this._fetchLinks();
-          if (links) {
-            /* set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD
-             * is reached by a history tile, the last tile is pushed out
-             */
-            this.__linksCache = links.map((link, position) => {
-              link.frecency = TILES_FRECENCY_THRESHOLD;
-              link.lastVisitDate = links.length - position;
-              return link;
-            });
-            this.__shouldRefreshCache = false;
-          }
-        }
-        catch(e) {
-          // Fetch failed
-          Cu.reportError(e);
-        }
-        deferred.resolve();
-      }
-      else {
-        deferred.resolve();
+      if (rawLinks) {
+        /* set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD
+         * is reached by a history tile, the last tile is pushed out
+         */
+        links = rawLinks.map((link, position) => {
+          link.frecency = TILES_FRECENCY_THRESHOLD;
+          link.lastVisitDate = rawLinks.length - position;
+          return link;
+        });
       }
 
-      yield deferred.promise;
-      let clone;
-      if (this.__linksCache) {
-        clone = JSON.parse(JSON.stringify(this.__linksCache));
-      }
       if (aCallback) {
-        aCallback(clone)
+        aCallback(links);
       }
-    }.bind(this));
+    }, error => {
+      // report this error
+
+      Cu.reportError(error);
+
+      if (aCallback) {
+        aCallback([]);
+      }
+    });
   },
 
   init: function DirectoryTilesProvider_init() {
@@ -896,8 +879,6 @@ let DirectoryTilesProvider = {
    * Return the object to its pre-init state
    */
   reset: function DirectoryTilesProvider_reset() {
-    this.__linksCache = [];
-    this.__shouldRefreshCache = true;
     this.__tilesUrl = undefined;
     this._removePrefsObserver();
     this._removeObservers();
