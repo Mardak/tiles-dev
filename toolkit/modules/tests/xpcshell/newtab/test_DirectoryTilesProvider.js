@@ -43,7 +43,7 @@ add_task(function test_DirectoryTiles__linkObservers() {
   do_check_eq(provider._observers.length, 1);
   Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
 
-  yield deferred.promise; 
+  yield deferred.promise;
   provider._removeObservers();
   do_check_eq(provider._observers.length, 0);
 
