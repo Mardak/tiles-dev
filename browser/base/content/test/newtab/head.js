@@ -4,6 +4,8 @@
 const PREF_NEWTAB_ENABLED = "browser.newtabpage.enabled";
 
 Services.prefs.setBoolPref(PREF_NEWTAB_ENABLED, true);
+// start with no directory links by default
+Services.prefs.setCharPref("browser.newtabpage.directorySource", "data:application/json,{}");
 
 let tmp = {};
 Cu.import("resource://gre/modules/Promise.jsm", tmp);
