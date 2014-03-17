@@ -50,6 +50,7 @@ let gGrid = {
     this._createSiteFragment();
     this._render();
     window.addEventListener("resize", this);
+    window.addEventListener("load", this);
   },
 
   /**
@@ -70,6 +71,7 @@ let gGrid = {
   handleEvent: function Grid_handleEvent(aEvent) {
     switch (aEvent.type) {
       case "resize":
+      case "load":
         this._updateHeight();
         break;
     }
@@ -188,6 +190,9 @@ let gGrid = {
    * Make sure the correct number of rows are visible
    */
   _updateHeight: function Grid_updateHeight() {
+    // do not reset maxHeight if clientHeight is unknown
+    if (document.documentElement.clientHeight == 0) return;
+
     let rows = Math.floor((document.documentElement.clientHeight -
                            GRID_TOP_MARGIN) / CELL_HEIGHT);
     this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) *
