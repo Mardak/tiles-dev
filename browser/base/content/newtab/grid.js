@@ -190,7 +190,7 @@ let gGrid = {
    * Make sure the correct number of rows are visible
    */
   _updateHeight: function Grid_updateHeight() {
-    // Don't both setting maxHeight before rendered
+    // Don't bother setting maxHeight before rendered
     let {clientHeight} = document.documentElement;
     if (clientHeight == 0) {
       return;
