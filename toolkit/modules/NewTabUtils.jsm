@@ -12,7 +12,6 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/Promise.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
   "resource://gre/modules/PlacesUtils.jsm");
@@ -789,35 +788,34 @@ let DirectoryProvider = {
 
   /**
    * Fetches the current set of directory links.
-   * @returns a set of links in a promise.
+   * @returns a set of links.
    */
-  _fetchLinks: function DirectoryProvider_fetchLinks() {
-    let deferred = Promise.defer();
-
+  _fetchLinks: function DirectoryProvider_fetchLinks(aCallback) {
     try {
       NetUtil.asyncFetch(this._tilesURL, (aInputStream, aResult, aRequest) => {
+        let output;
         if (Components.isSuccessCode(aResult)) {
           try {
             let json = NetUtil.readInputStreamToString(aInputStream,
                                                        aInputStream.available(),
                                                        {charset: "UTF-8"});
             let locale = getLocale();
-            deferred.resolve(JSON.parse(json)[locale] || []);
+            output = JSON.parse(json)[locale];
           }
           catch(e) {
-            deferred.reject(e);
+            Cu.reportError(e);
           }
         }
         else {
-          deferred.reject(new Error("the fetch of " + this._tilesURL + "was unsuccessful"));
+          Cu.reportError(new Error("the fetch of " + this._tilesURL + "was unsuccessful"));
         }
+        aCallback(output || []);
       });
     }
     catch(e) {
-      deferred.reject(e);
+      aCallback([]);
+      Cu.reportError(e);
     }
-
-    return deferred.promise;
   },
 
   /**
@@ -825,7 +823,7 @@ let DirectoryProvider = {
    * @param aCallback The function that the array of links is passed to.
    */
   getLinks: function DirectoryProvider_getLinks(aCallback) {
-    this._fetchLinks().then(rawLinks => {
+    this._fetchLinks(rawLinks => {
       // Set a rank to the tiles so that when DIRECTORY_FREECENCY is
       // reached by a history tile, the last tile is pushed out
       aCallback(rawLinks.map((link, position) => {
@@ -833,9 +831,6 @@ let DirectoryProvider = {
         link.lastVisitDate = rawLinks.length - position;
         return link;
       }));
-    }, error => {
-      Cu.reportError(error);
-      aCallback([]);
     });
   },
 
