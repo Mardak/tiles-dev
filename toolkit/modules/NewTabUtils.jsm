@@ -802,7 +802,7 @@ let DirectoryProvider = {
             let locale = getLocale();
             output = JSON.parse(json)[locale];
           }
-          catch(e) {
+          catch (e) {
             Cu.reportError(e);
           }
         }
@@ -812,7 +812,7 @@ let DirectoryProvider = {
         aCallback(output || []);
       });
     }
-    catch(e) {
+    catch (e) {
       Cu.reportError(e);
       aCallback([]);
     }
