@@ -4,7 +4,7 @@
 "use strict";
 
 /**
- * This file tests the DirectoryTiles singleton in the NewTabUtils.jsm module.
+ * This file tests the DirectoryProvider singleton in the NewTabUtils.jsm module.
  */
 
 Cu.import("resource://gre/modules/Services.jsm");
@@ -29,7 +29,7 @@ function run_test() {
   run_next_test();
 }
 
-add_task(function test_DirectoryTiles__linkObservers() {
+add_task(function test_DirectoryProvider__linkObservers() {
   let deferred = Promise.defer();
   let testObserver = {
     onManyLinksChanged: function() {
@@ -41,7 +41,7 @@ add_task(function test_DirectoryTiles__linkObservers() {
   provider.init();
   provider.addObserver(testObserver);
   do_check_eq(provider._observers.length, 1);
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], kDefaultTileSource);
 
   yield deferred.promise;
   provider._removeObservers();
@@ -50,23 +50,23 @@ add_task(function test_DirectoryTiles__linkObservers() {
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles__tilesUrl() {
+add_task(function test_DirectoryProvider__tilesURL() {
   let provider = NewTabUtils._providers.directory;
   let exampleUrl = 'http://example.com';
-  // tilesUrl is obtained from prefs
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], exampleUrl);
+  // tilesURL is obtained from prefs
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], exampleUrl);
 
-  do_check_eq(provider._tilesUrl, exampleUrl);
+  do_check_eq(provider._tilesURL, exampleUrl);
 
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles__tilesUrl_data_copy() {
+add_task(function test_DirectoryProvider__tilesURL_data_copy() {
   let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
 
   let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
-  do_check_eq(provider._tilesUrl, dataURI);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
+  do_check_eq(provider._tilesURL, dataURI);
 
   let links;
 
@@ -83,7 +83,7 @@ add_task(function test_DirectoryTiles__tilesUrl_data_copy() {
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles__tilesUrl_locale() {
+add_task(function test_DirectoryProvider__tilesURL_locale() {
   let data = {
     "en-US": [{"url":"http://example.com","title":"US"}],
     "cn-ZH": [
@@ -94,12 +94,12 @@ add_task(function test_DirectoryTiles__tilesUrl_locale() {
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
   let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
   Services.prefs.setCharPref('general.useragent.locale', 'en-US');
 
   // set up the observer
   provider.init();
-  do_check_eq(provider._tilesUrl, dataURI);
+  do_check_eq(provider._tilesURL, dataURI);
 
   let links;
 
@@ -115,21 +115,21 @@ add_task(function test_DirectoryTiles__tilesUrl_locale() {
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles__prefObserver_url() {
+add_task(function test_DirectoryProvider__prefObserver_url() {
   let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], kDefaultTileSource);
 
   // set up the observer
   provider.init();
-  do_check_eq(provider._tilesUrl, kDefaultTileSource);
+  do_check_eq(provider._tilesURL, kDefaultTileSource);
 
   let links = yield fetchData(provider);
   do_check_true(links.length > 0);
 
   let exampleUrl = 'http://example.com';
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], exampleUrl);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], exampleUrl);
 
-  do_check_eq(provider._tilesUrl, exampleUrl);
+  do_check_eq(provider._tilesURL, exampleUrl);
 
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
@@ -137,29 +137,29 @@ add_task(function test_DirectoryTiles__prefObserver_url() {
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles_getLinks() {
+add_task(function test_DirectoryProvider_getLinks() {
   let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], kDefaultTileSource);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], kDefaultTileSource);
 
   let links = yield fetchData(provider);
   do_check_true(links.length > 0);
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles_getLinks_invalid() {
+add_task(function test_DirectoryProvider_getLinks_invalid() {
   let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], "http://example.com");
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], "http://example.com");
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
   provider.reset();
 });
 
-add_task(function test_DirectoryTiles_getLinks_noLocaleData() {
+add_task(function test_DirectoryProvider_getLinks_noLocaleData() {
   let provider = NewTabUtils._providers.directory;
   Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
   let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
-  Services.prefs.setCharPref(provider._prefs['tilesUrl'], dataURI);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);

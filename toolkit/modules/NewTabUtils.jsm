@@ -63,6 +63,9 @@ const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
 // The preference that tells what locale the user selected
 const PREF_SELECTED_LOCALE = "general.useragent.locale";
 
+// The preference that tells where to obtain directory tiles
+const PREF_DIRECTORY_TILES_SOURCE = "browser.newtabpage.directoryTilesSource";
+
 // The maximum number of results PlacesProvider retrieves from history.
 const HISTORY_RESULTS_LIMIT = 100;
 
@@ -74,10 +77,10 @@ const TOPIC_GATHER_TELEMETRY = "gather-telemetry";
 
 // The amount of time we wait while coalescing updates for hidden pages.
 const SCHEDULE_UPDATE_TIMEOUT_MS = 1000;
-//
+
 // The threshold when a Places link becomes a history tile and pushes out a
 // directory tile.
-const TILES_FRECENCY_THRESHOLD = 1000;
+const DIRECTORY_FREECENCY = 1000;
 
 /**
  * Calculate the MD5 hash for a string.
@@ -737,56 +740,47 @@ let PlacesProvider = {
  * Directory Tiles are a hard-coded set of links shown if a user's tile
  * inventory is empty.
  */
-let DirectoryTilesProvider = {
+let DirectoryProvider = {
 
-  __tilesUrl: null,
+  __tilesURL: null,
 
   _observers: [],
 
   get _prefs() Object.freeze({
-    tilesUrl: "browser.newtabpage.directoryTilesSource",
+    tilesURL: PREF_DIRECTORY_TILES_SOURCE,
     matchOSLocale: PREF_MATCH_OS_LOCALE,
     prefSelectedLocale: PREF_SELECTED_LOCALE,
   }),
 
-  get _tilesUrl() {
-    if (!this.__tilesUrl) {
+  get _tilesURL() {
+    if (!this.__tilesURL) {
       try {
-        this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
+        this.__tilesURL = Services.prefs.getCharPref(this._prefs["tilesURL"]);
       }
-      catch(e) {
+      catch (e) {
         Cu.reportError("Error fetching directory tiles url from prefs: " + e);
       }
     }
-    return this.__tilesUrl;
+    return this.__tilesURL;
   },
 
-  observe: function DirectoryTilesProvider_observe(aSubject, aTopic, aData) {
+  observe: function DirectoryProvider_observe(aSubject, aTopic, aData) {
     if (aTopic == "nsPref:changed") {
-      if (aData == this._prefs["tilesUrl"]) {
-        try {
-          this.__tilesUrl = Services.prefs.getCharPref(this._prefs["tilesUrl"]);
-          this._callObservers("onManyLinksChanged");
-        }
-        catch(e) {
-          Cu.reportError("Error fetching directory tiles url from prefs: " + e);
-        }
+      if (aData == this._prefs["tilesURL"]) {
+        delete this.__tilesURL;
       }
-      else if (aData == this._prefs["matchOSLocale"] ||
-               aData == this._prefs["prefSelectedLocale"]) {
-        this._callObservers("onManyLinksChanged");
-      }
+      this._callObservers("onManyLinksChanged");
     }
   },
 
-  _addPrefsObserver: function DirectoryTilesProvider_addObserver() {
+  _addPrefsObserver: function DirectoryProvider_addObserver() {
     for (let pref in this._prefs) {
       let prefName = this._prefs[pref];
       Services.prefs.addObserver(prefName, this, false);
     }
   },
 
-  _removePrefsObserver: function DirectoryTilesProvider_removeObserver() {
+  _removePrefsObserver: function DirectoryProvider_removeObserver() {
     for (let pref in this._prefs) {
       let prefName = this._prefs[pref];
       Services.prefs.removeObserver(prefName, this);
@@ -797,11 +791,11 @@ let DirectoryTilesProvider = {
    * Fetches the current set of directory links.
    * @returns a set of links in a promise.
    */
-  _fetchLinks: function DirectoryTilesProvider_fetchLinks() {
+  _fetchLinks: function DirectoryProvider_fetchLinks() {
     let deferred = Promise.defer();
 
     try {
-      NetUtil.asyncFetch(this._tilesUrl, (aInputStream, aResult, aRequest) => {
+      NetUtil.asyncFetch(this._tilesURL, (aInputStream, aResult, aRequest) => {
         if (Components.isSuccessCode(aResult)) {
           try {
             let json = NetUtil.readInputStreamToString(aInputStream,
@@ -815,7 +809,7 @@ let DirectoryTilesProvider = {
           }
         }
         else {
-          deferred.reject(new Error("the fetch of " + this._tilesUrl + "was unsuccessful"));
+          deferred.reject(new Error("the fetch of " + this._tilesURL + "was unsuccessful"));
         }
       });
     }
@@ -830,12 +824,12 @@ let DirectoryTilesProvider = {
    * Gets the current set of directory links.
    * @param aCallback The function that the array of links is passed to.
    */
-  getLinks: function DirectoryTilesProvider_getLinks(aCallback) {
+  getLinks: function DirectoryProvider_getLinks(aCallback) {
     this._fetchLinks().then(rawLinks => {
-      // Set a rank to the tiles so that when TILES_FRECENCY_THRESHOLD is
+      // Set a rank to the tiles so that when DIRECTORY_FREECENCY is
       // reached by a history tile, the last tile is pushed out
       aCallback(rawLinks.map((link, position) => {
-        link.frecency = TILES_FRECENCY_THRESHOLD;
+        link.frecency = DIRECTORY_FREECENCY;
         link.lastVisitDate = rawLinks.length - position;
         return link;
       }));
@@ -845,24 +839,24 @@ let DirectoryTilesProvider = {
     });
   },
 
-  init: function DirectoryTilesProvider_init() {
+  init: function DirectoryProvider_init() {
     this._addPrefsObserver();
   },
 
   /**
    * Return the object to its pre-init state
    */
-  reset: function DirectoryTilesProvider_reset() {
-    this.__tilesUrl = undefined;
+  reset: function DirectoryProvider_reset() {
+    delete this.__tilesURL;
     this._removePrefsObserver();
     this._removeObservers();
   },
 
-  addObserver: function DirectoryTilesProvider_addObserver(aObserver) {
+  addObserver: function DirectoryProvider_addObserver(aObserver) {
     this._observers.push(aObserver);
   },
 
-  _callObservers: function DirectoryTilesProvider__callObservers(aMethodName, aArg) {
+  _callObservers: function DirectoryProvider__callObservers(aMethodName, aArg) {
     for (let obs of this._observers) {
       if (typeof(obs[aMethodName]) == "function") {
         try {
@@ -875,7 +869,7 @@ let DirectoryTilesProvider = {
   },
 
   _removeObservers: function() {
-    while(this._observers.length) {
+    while (this._observers.length) {
       this._observers.pop();
     }
   }
@@ -1340,7 +1334,7 @@ this.NewTabUtils = {
   init: function NewTabUtils_init() {
     if (this.initWithoutProviders()) {
       PlacesProvider.init();
-      DirectoryTilesProvider.init();
+      DirectoryProvider.init();
       Links.addProvider(PlacesProvider);
     }
   },
@@ -1382,7 +1376,7 @@ this.NewTabUtils = {
   },
 
   _providers: {
-    directory: DirectoryTilesProvider,
+    directory: DirectoryProvider,
     places: PlacesProvider
   },
 
