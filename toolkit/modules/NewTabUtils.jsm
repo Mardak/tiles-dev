@@ -788,7 +788,7 @@ let DirectoryProvider = {
 
   /**
    * Fetches the current set of directory links.
-   * @returns a set of links.
+   * @param aCallback a callback that is provided a set of links.
    */
   _fetchLinks: function DirectoryProvider_fetchLinks(aCallback) {
     try {
@@ -813,8 +813,8 @@ let DirectoryProvider = {
       });
     }
     catch(e) {
-      aCallback([]);
       Cu.reportError(e);
+      aCallback([]);
     }
   },
 
