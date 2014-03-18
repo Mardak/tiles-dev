@@ -63,7 +63,7 @@ const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
 const PREF_SELECTED_LOCALE = "general.useragent.locale";
 
 // The preference that tells where to obtain directory tiles
-const PREF_DIRECTORY_TILES_SOURCE = "browser.newtabpage.directoryTilesSource";
+const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directorySource";
 
 // The maximum number of results PlacesProvider retrieves from history.
 const HISTORY_RESULTS_LIMIT = 100;
@@ -746,7 +746,7 @@ let DirectoryProvider = {
   _observers: [],
 
   get _prefs() Object.freeze({
-    tilesURL: PREF_DIRECTORY_TILES_SOURCE,
+    tilesURL: PREF_DIRECTORY_SOURCE,
     matchOSLocale: PREF_MATCH_OS_LOCALE,
     prefSelectedLocale: PREF_SELECTED_LOCALE,
   }),
