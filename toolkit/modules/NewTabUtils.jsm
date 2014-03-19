@@ -832,6 +832,7 @@ let DirectoryProvider = {
       aCallback(rawLinks.map((link, position) => {
         link.frecency = DIRECTORY_FREECENCY;
         link.lastVisitDate = rawLinks.length - position;
+        link.telemetryId = Math.min(position, 9);
         return link;
       }));
     });

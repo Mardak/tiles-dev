@@ -89,11 +89,20 @@ let gPage = {
       if (this.allowBackgroundCaptures) {
         Services.telemetry.getHistogramById("NEWTAB_PAGE_SHOWN").add(true);
 
+        let directoryCount = 0;
         for (let site of gGrid.sites) {
           if (site) {
             site.captureIfMissing();
+            if (site.link.telemetryId != null) {
+              directoryCount++;
+            }
           }
         }
+
+        // Record how many directory sites were shown, but place counts over the
+        // default 9 in the same bucket
+        Services.telemetry.getHistogramById("NEWTAB_PAGE_DIRECTORY_SITES_SHOWN")
+                          .add(Math.min(10, directoryCount));
       }
     });
     this._mutationObserver.observe(document.documentElement, {
