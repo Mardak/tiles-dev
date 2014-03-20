@@ -79,7 +79,7 @@ const SCHEDULE_UPDATE_TIMEOUT_MS = 1000;
 
 // The threshold when a Places link becomes a history tile and pushes out a
 // directory tile.
-const DIRECTORY_FREECENCY = 1000;
+const DIRECTORY_FRECENCY = 1000;
 
 /**
  * Calculate the MD5 hash for a string.
@@ -824,10 +824,10 @@ let DirectoryProvider = {
    */
   getLinks: function DirectoryProvider_getLinks(aCallback) {
     this._fetchLinks(rawLinks => {
-      // Set a rank to the tiles so that when DIRECTORY_FREECENCY is
+      // Set a rank to the tiles so that when DIRECTORY_FRECENCY is
       // reached by a history tile, the last tile is pushed out
       aCallback(rawLinks.map((link, position) => {
-        link.frecency = DIRECTORY_FREECENCY;
+        link.frecency = DIRECTORY_FRECENCY;
         link.lastVisitDate = rawLinks.length - position;
         return link;
       }));
