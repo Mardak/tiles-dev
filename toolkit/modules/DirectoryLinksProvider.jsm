@@ -154,7 +154,7 @@ let DirectoryLinksProvider = {
       aCallback(rawLinks.map((link, position) => {
         link.frecency = DIRECTORY_FRECENCY;
         link.lastVisitDate = rawLinks.length - position;
-        link.telemetryId = Math.min(position, 9);
+        link.telemetryID = Math.min(position, 9);
         return link;
       }));
     });
