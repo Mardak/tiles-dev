@@ -7,6 +7,7 @@
  * This file tests the DirectoryProvider singleton in the DirectoryLinksProvider.jsm module.
  */
 
+const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
@@ -15,6 +16,24 @@ const console = Cc["@mozilla.org/consoleservice;1"].
   getService(Components.interfaces.nsIConsoleService);
 
 const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}'
+
+function isIdentical(actual, expected) {
+  if (expected == null) {
+    do_check_eq(actual, expected);
+  }
+  else if (typeof expected == "object") {
+    // Make sure all the keys match up
+    do_check_eq(Object.keys(actual).sort() + "", Object.keys(expected).sort());
+
+    // Recursively check each value individually
+    Object.keys(expected).forEach(key => {
+      isIdentical(actual[key], expected[key]);
+    });
+  }
+  else {
+    do_check_eq(actual, expected);
+  }
+}
 
 function fetchData(provider) {
   let deferred = Promise.defer();
