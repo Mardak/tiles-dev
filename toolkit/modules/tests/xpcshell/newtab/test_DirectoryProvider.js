@@ -4,17 +4,17 @@
 "use strict";
 
 /**
- * This file tests the DirectoryProvider singleton in the NewTabUtils.jsm module.
+ * This file tests the DirectoryProvider singleton in the DirectoryLinksProvider.jsm module.
  */
 
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/NewTabUtils.jsm");
+Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 
 const console = Cc["@mozilla.org/consoleservice;1"].
   getService(Components.interfaces.nsIConsoleService);
 
-const kDefaultTileSource = "chrome://global/content/directoryTiles.json";
+const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}'
 
 function fetchData(provider) {
   let deferred = Promise.defer();
@@ -37,27 +37,15 @@ add_task(function test_DirectoryProvider__linkObservers() {
     }
   }
 
-  let provider = NewTabUtils._providers.directory;
+  let provider = DirectoryProvider;
   provider.init();
   provider.addObserver(testObserver);
   do_check_eq(provider._observers.length, 1);
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], kDefaultTileSource);
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], kTestSource);
 
   yield deferred.promise;
   provider._removeObservers();
   do_check_eq(provider._observers.length, 0);
-
-  provider.reset();
-  Services.prefs.clearUserPref(provider._prefs['tilesURL']);
-});
-
-add_task(function test_DirectoryProvider__tilesURL() {
-  let provider = NewTabUtils._providers.directory;
-  let exampleUrl = 'http://example.com';
-  // tilesURL is obtained from prefs
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], exampleUrl);
-
-  do_check_eq(provider._tilesURL, exampleUrl);
 
   provider.reset();
   Services.prefs.clearUserPref(provider._prefs['tilesURL']);
@@ -73,7 +61,7 @@ add_task(function test_DirectoryProvider__tilesURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = NewTabUtils._providers.directory;
+  let provider = DirectoryProvider;
   Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
   Services.prefs.setCharPref('general.useragent.locale', 'en-US');
 
@@ -97,20 +85,22 @@ add_task(function test_DirectoryProvider__tilesURL_locale() {
 });
 
 add_task(function test_DirectoryProvider__prefObserver_url() {
-  let provider = NewTabUtils._providers.directory;
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], kDefaultTileSource);
+  let provider = DirectoryProvider;
+  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
+  Services.prefs.setCharPref(provider._prefs['tilesURL'], kTestSource);
 
   // set up the observer
   provider.init();
-  do_check_eq(provider._tilesURL, kDefaultTileSource);
+  do_check_eq(provider._tilesURL, kTestSource);
 
   let links = yield fetchData(provider);
-  do_check_true(links.length > 0);
+  do_check_eq(links.length, 1);
+  do_check_eq(links[0].title, "TestSource");
 
   // tests these 2 things:
   // 1. observer trigger on pref change
   // 2. invalid source url
-  let exampleUrl = 'http://example.com';
+  let exampleUrl = 'http://example.com/bad';
   Services.prefs.setCharPref(provider._prefs['tilesURL'], exampleUrl);
 
   do_check_eq(provider._tilesURL, exampleUrl);
@@ -119,11 +109,12 @@ add_task(function test_DirectoryProvider__prefObserver_url() {
   isIdentical(newLinks, []);
 
   provider.reset();
+  Services.prefs.clearUserPref('general.useragent.locale')
   Services.prefs.clearUserPref(provider._prefs['tilesURL']);
 });
 
 add_task(function test_DirectoryProvider_getLinks_noLocaleData() {
-  let provider = NewTabUtils._providers.directory;
+  let provider = DirectoryProvider;
   Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
   let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
   Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
