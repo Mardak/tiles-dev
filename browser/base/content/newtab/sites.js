@@ -191,10 +191,9 @@ Site.prototype = {
                       .add(aIndex);
 
     // Specially count clicks on directory tiles
-    let {telemetryID} = this.link;
-    if (telemetryID != null) {
+    if ("telemetryID" in this.link) {
       Services.telemetry.getHistogramById("NEWTAB_PAGE_DIRECTORY_SITE_CLICKED")
-                        .add(telemetryID);
+                        .add(this.link.telemetryID);
     }
   },
 
