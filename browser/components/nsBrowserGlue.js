@@ -22,6 +22,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "AddonManager",
 XPCOMUtils.defineLazyModuleGetter(this, "ContentClick",
                                   "resource:///modules/ContentClick.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "DirectoryLinksProvider",
+                                  "resource://gre/modules/DirectoryLinksProvider.jsm");
+
 XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
                                   "resource://gre/modules/NetUtil.jsm");
 
@@ -474,7 +477,9 @@ BrowserGlue.prototype = {
 
     WebappManager.init();
     PageThumbs.init();
+    DirectoryLinksProvider.init();
     NewTabUtils.init();
+    NewTabUtils.links.addProvider(DirectoryLinksProvider);
     BrowserNewTabPreloader.init();
 #ifdef NIGHTLY_BUILD
     if (Services.prefs.getBoolPref("dom.identity.enabled")) {
