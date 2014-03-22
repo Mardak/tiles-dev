@@ -7,8 +7,6 @@
 /**
  * Define various fixed dimensions
  */
-const CELL_HEIGHT = 16 + 1 + 150 + 1 + 16; // margin, border, height, border, margin
-const CELL_WIDTH = 16 + 1 + 243 + 1 + 16; // margin, border, width, border, margin
 const GRID_ABOVE_MARGIN = 50 + 16; // margin-top, margin
 const GRID_BOTTOM_MARGIN = 20 - 16; // line-height, margin
 
@@ -113,6 +111,14 @@ let gGrid = {
     // (Re-)initialize all cells.
     let cellElements = this.node.querySelectorAll(".newtab-cell");
     this._cells = [new Cell(this, cell) for (cell of cellElements)];
+
+    // Grab the computed height/width including margin and border
+    let refCell = cellElements[0];
+    let cellStyle = getComputedStyle(refCell);
+    this._cellHeight = parseFloat(cellStyle.marginTop) + refCell.offsetHeight +
+                       parseFloat(cellStyle.marginBottom);
+    this._cellWidth = parseFloat(cellStyle.marginLeft) + refCell.offsetWidth +
+                      parseFloat(cellStyle.marginRight);
   },
 
   /**
@@ -162,9 +168,9 @@ let gGrid = {
       this._updateHeight();
     }
 
-    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT +
+    this._node.style.height = gGridPrefs.gridRows * this._cellHeight +
                               GRID_BOTTOM_MARGIN + "px";
-    this._node.style.maxWidth = gGridPrefs.gridColumns * CELL_WIDTH + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth + "px";
 
     this._renderSites();
   },
@@ -179,8 +185,8 @@ let gGrid = {
    */
   _updateHeight: function Grid_updateHeight() {
     let rows = Math.floor((document.documentElement.clientHeight -
-                           GRID_ABOVE_MARGIN) / CELL_HEIGHT);
+                           GRID_ABOVE_MARGIN) / this._cellHeight);
     this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) *
-                                 CELL_HEIGHT + GRID_BOTTOM_MARGIN + "px";
+                                 this._cellHeight + GRID_BOTTOM_MARGIN + "px";
   }
 };
