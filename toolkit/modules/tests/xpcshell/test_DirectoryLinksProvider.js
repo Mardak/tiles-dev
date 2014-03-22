@@ -4,7 +4,7 @@
 "use strict";
 
 /**
- * This file tests the DirectoryProvider singleton in the DirectoryLinksProvider.jsm module.
+ * This file tests the DirectoryLinksProvider singleton in the DirectoryLinksProvider.jsm module.
  */
 
 const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
@@ -48,7 +48,7 @@ function run_test() {
   run_next_test();
 }
 
-add_task(function test_DirectoryProvider__linkObservers() {
+add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();
   let testObserver = {
     onManyLinksChanged: function() {
@@ -56,21 +56,21 @@ add_task(function test_DirectoryProvider__linkObservers() {
     }
   }
 
-  let provider = DirectoryProvider;
+  let provider = DirectoryLinksProvider;
   provider.init();
   provider.addObserver(testObserver);
   do_check_eq(provider._observers.length, 1);
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], kTestSource);
+  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
   yield deferred.promise;
   provider._removeObservers();
   do_check_eq(provider._observers.length, 0);
 
   provider.reset();
-  Services.prefs.clearUserPref(provider._prefs['tilesURL']);
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
 });
 
-add_task(function test_DirectoryProvider__tilesURL_locale() {
+add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let data = {
     "en-US": [{"url":"http://example.com","title":"US"}],
     "cn-ZH": [
@@ -80,13 +80,13 @@ add_task(function test_DirectoryProvider__tilesURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = DirectoryProvider;
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
+  let provider = DirectoryLinksProvider;
+  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
   Services.prefs.setCharPref('general.useragent.locale', 'en-US');
 
   // set up the observer
   provider.init();
-  do_check_eq(provider._tilesURL, dataURI);
+  do_check_eq(provider._linksURL, dataURI);
 
   let links;
 
@@ -100,17 +100,17 @@ add_task(function test_DirectoryProvider__tilesURL_locale() {
 
   provider.reset();
   Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['tilesURL']);
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
 });
 
-add_task(function test_DirectoryProvider__prefObserver_url() {
-  let provider = DirectoryProvider;
+add_task(function test_DirectoryLinksProvider__prefObserver_url() {
+  let provider = DirectoryLinksProvider;
   Services.prefs.setCharPref('general.useragent.locale', 'en-US');
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], kTestSource);
+  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
   // set up the observer
   provider.init();
-  do_check_eq(provider._tilesURL, kTestSource);
+  do_check_eq(provider._linksURL, kTestSource);
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
@@ -120,27 +120,27 @@ add_task(function test_DirectoryProvider__prefObserver_url() {
   // 1. observer trigger on pref change
   // 2. invalid source url
   let exampleUrl = 'http://example.com/bad';
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], exampleUrl);
+  Services.prefs.setCharPref(provider._prefs['linksURL'], exampleUrl);
 
-  do_check_eq(provider._tilesURL, exampleUrl);
+  do_check_eq(provider._linksURL, exampleUrl);
 
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
 
   provider.reset();
   Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['tilesURL']);
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
 });
 
-add_task(function test_DirectoryProvider_getLinks_noLocaleData() {
-  let provider = DirectoryProvider;
+add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
+  let provider = DirectoryLinksProvider;
   Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
   let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
-  Services.prefs.setCharPref(provider._prefs['tilesURL'], dataURI);
+  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
   provider.reset();
   Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['tilesURL']);
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
 });
