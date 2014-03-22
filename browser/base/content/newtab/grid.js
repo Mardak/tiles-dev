@@ -168,8 +168,7 @@ let gGrid = {
       this._updateHeight();
     }
 
-    this._node.style.height = gGridPrefs.gridRows * this._cellHeight +
-                              GRID_BOTTOM_MARGIN + "px";
+    this._node.style.height = this._computeHeight();
     this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth + "px";
 
     this._renderSites();
@@ -181,12 +180,21 @@ let gGrid = {
   },
 
   /**
+   * Calculate the height for a number of rows up to the maximum rows
+   * @param rows Number of rows defauling to the max
+   */
+  _computeHeight: function Grid_computeHeight(rows) {
+    let {gridRows} = gGridPrefs;
+    rows = rows == null ? gridRows : Math.min(gridRows, rows);
+    return rows * this._cellHeight + GRID_BOTTOM_MARGIN + "px";
+  },
+
+  /**
    * Make sure the correct number of rows are visible
    */
   _updateHeight: function Grid_updateHeight() {
     let rows = Math.floor((document.documentElement.clientHeight -
                            GRID_ABOVE_MARGIN) / this._cellHeight);
-    this._node.style.maxHeight = Math.min(gGridPrefs.gridRows, rows) *
-                                 this._cellHeight + GRID_BOTTOM_MARGIN + "px";
+    this._node.style.maxHeight = this._computeHeight(rows);
   }
 };
