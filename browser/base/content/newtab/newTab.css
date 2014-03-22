@@ -182,8 +182,9 @@ input[type=button] {
 }
 
 .newtab-control.newtab-control-sponsored {
-  bottom: 4px;
+  bottom: -20px;
   height: 16px;
+  -moz-margin-end: -4px;
   opacity: 1;
   top: auto;
   width: 16px;
