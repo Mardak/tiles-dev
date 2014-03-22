@@ -12,10 +12,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 
-const console = Cc["@mozilla.org/consoleservice;1"].
-  getService(Components.interfaces.nsIConsoleService);
-
-const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}'
+const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
 
 function isIdentical(actual, expected) {
   if (expected == null) {
