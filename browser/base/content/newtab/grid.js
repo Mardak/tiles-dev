@@ -162,7 +162,8 @@ let gGrid = {
       this._updateHeight();
     }
 
-    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT + "px";
+    this._node.style.height = gGridPrefs.gridRows * CELL_HEIGHT +
+                              GRID_BOTTOM_MARGIN + "px";
     this._node.style.maxWidth = gGridPrefs.gridColumns * CELL_WIDTH + "px";
 
     this._renderSites();
