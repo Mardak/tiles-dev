@@ -47,8 +47,8 @@ let gGrid = {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
     this._render();
-    addEventListener("load", () => this._resizeGrid());
-    addEventListener("resize", () => this._resizeGrid());
+    addEventListener("load", this);
+    addEventListener("resize", this);
   },
 
   /**
@@ -61,6 +61,25 @@ let gGrid = {
     let node = aCell.node;
     node.appendChild(this._siteFragment.cloneNode(true));
     return new Site(node.firstElementChild, aLink);
+  },
+
+  /**
+   * Handles all grid events.
+   */
+  handleEvent: function Grid_handleEvent(aEvent) {
+    switch (aEvent.type) {
+      case "load":
+        // Save the cell's computed height/width including margin and border
+        let refCell = document.querySelector(".newtab-cell");
+        this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
+        this._cellHeight = refCell.offsetHeight + this._cellMargin;
+        this._cellWidth = refCell.offsetWidth + this._cellMargin;
+
+        // fallthrough to resize
+      case "resize":
+        this._resizeGrid();
+        break;
+    }
   },
 
   /**
@@ -113,12 +132,6 @@ let gGrid = {
     // (Re-)initialize all cells.
     let cellElements = this.node.querySelectorAll(".newtab-cell");
     this._cells = [new Cell(this, cell) for (cell of cellElements)];
-
-    // Save the cell's computed height/width including margin and border
-    let refCell = cellElements[0];
-    this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
-    this._cellHeight = refCell.offsetHeight + this._cellMargin;
-    this._cellWidth = refCell.offsetWidth + this._cellMargin;
   },
 
   /**
