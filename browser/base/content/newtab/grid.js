@@ -8,6 +8,7 @@
  * Define various fixed dimensions
  */
 const GRID_BOTTOM_EXTRA = 4; // title's line-height extends 4px past the margin
+const GRID_WIDTH_EXTRA = 1; // provide 1px buffer to allow for rounding error
 
 /**
  * This singleton represents the grid that contains all sites.
@@ -166,7 +167,8 @@ let gGrid = {
     }
 
     this._node.style.height = this._computeHeight();
-    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth + "px";
+    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
+                                GRID_WIDTH_EXTRA + "px";
 
     this._renderSites();
   },
