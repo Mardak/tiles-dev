@@ -52,7 +52,7 @@ input[type=button] {
 }
 
 #newtab-margin-top {
-  height: 50px;
+  height: 40px;
   display: -moz-box;
   -moz-box-align: center;
   -moz-box-pack: center;
