@@ -7,7 +7,7 @@
 /**
  * Define various fixed dimensions
  */
-const GRID_BOTTOM_MARGIN = 20 - 16; // line-height, margin
+const GRID_BOTTOM_EXTRA = 4; // title's line-height extends 4px past the margin
 
 /**
  * This singleton represents the grid that contains all sites.
@@ -183,7 +183,7 @@ let gGrid = {
   _computeHeight: function Grid_computeHeight(rows) {
     let {gridRows} = gGridPrefs;
     rows = rows == null ? gridRows : Math.min(gridRows, rows);
-    return rows * this._cellHeight + GRID_BOTTOM_MARGIN + "px";
+    return rows * this._cellHeight + GRID_BOTTOM_EXTRA + "px";
   },
 
   /**
