@@ -7,7 +7,6 @@
 /**
  * Define various fixed dimensions
  */
-const GRID_ABOVE_MARGIN = 50 + 16; // margin-top, margin
 const GRID_BOTTOM_MARGIN = 20 - 16; // line-height, margin
 
 /**
@@ -112,13 +111,11 @@ let gGrid = {
     let cellElements = this.node.querySelectorAll(".newtab-cell");
     this._cells = [new Cell(this, cell) for (cell of cellElements)];
 
-    // Grab the computed height/width including margin and border
+    // Save the cell's computed height/width including margin and border
     let refCell = cellElements[0];
-    let cellStyle = getComputedStyle(refCell);
-    this._cellHeight = parseFloat(cellStyle.marginTop) + refCell.offsetHeight +
-                       parseFloat(cellStyle.marginBottom);
-    this._cellWidth = parseFloat(cellStyle.marginLeft) + refCell.offsetWidth +
-                      parseFloat(cellStyle.marginRight);
+    this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
+    this._cellHeight = refCell.offsetHeight + this._cellMargin;
+    this._cellWidth = refCell.offsetWidth + this._cellMargin;
   },
 
   /**
@@ -193,8 +190,9 @@ let gGrid = {
    * Make sure the correct number of rows are visible
    */
   _updateHeight: function Grid_updateHeight() {
-    let rows = Math.floor((document.documentElement.clientHeight -
-                           GRID_ABOVE_MARGIN) / this._cellHeight);
-    this._node.style.maxHeight = this._computeHeight(rows);
+    let availSpace = document.documentElement.clientHeight - this._cellMargin -
+                     document.querySelector("#newtab-margin-top").offsetHeight;
+    let visibleRows = Math.floor(availSpace / this._cellHeight);
+    this._node.style.maxHeight = this._computeHeight(visibleRows);
   }
 };
