@@ -46,8 +46,9 @@ let gGrid = {
   init: function Grid_init() {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
-    addEventListener("load", () => this._render());
-    addEventListener("resize", () => this._updateHeight());
+    this._render();
+    addEventListener("load", () => this._resizeGrid());
+    addEventListener("resize", () => this._resizeGrid());
   },
 
   /**
@@ -77,6 +78,7 @@ let gGrid = {
 
     // Render the grid again.
     this._render();
+    this._resizeGrid();
   },
 
   /**
@@ -163,12 +165,7 @@ let gGrid = {
   _render: function Grid_render() {
     if (this._shouldRenderGrid()) {
       this._renderGrid();
-      this._updateHeight();
     }
-
-    this._node.style.height = this._computeHeight();
-    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
-                                GRID_WIDTH_EXTRA + "px";
 
     this._renderSites();
   },
@@ -179,6 +176,19 @@ let gGrid = {
   },
 
   /**
+   * Make sure the correct number of rows and columns are visible
+   */
+  _resizeGrid: function Grid_resizeGrid() {
+    let availSpace = document.documentElement.clientHeight - this._cellMargin -
+                     document.querySelector("#newtab-margin-top").offsetHeight;
+    let visibleRows = Math.floor(availSpace / this._cellHeight);
+    this._node.style.height = this._computeHeight();
+    this._node.style.maxHeight = this._computeHeight(visibleRows);
+    this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
+                                GRID_WIDTH_EXTRA + "px";
+  },
+
+  /**
    * Calculate the height for a number of rows up to the maximum rows
    * @param rows Number of rows defauling to the max
    */
@@ -186,15 +196,5 @@ let gGrid = {
     let {gridRows} = gGridPrefs;
     rows = rows == null ? gridRows : Math.min(gridRows, rows);
     return rows * this._cellHeight + GRID_BOTTOM_EXTRA + "px";
-  },
-
-  /**
-   * Make sure the correct number of rows are visible
-   */
-  _updateHeight: function Grid_updateHeight() {
-    let availSpace = document.documentElement.clientHeight - this._cellMargin -
-                     document.querySelector("#newtab-margin-top").offsetHeight;
-    let visibleRows = Math.floor(availSpace / this._cellHeight);
-    this._node.style.maxHeight = this._computeHeight(visibleRows);
   }
 };
