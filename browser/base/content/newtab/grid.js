@@ -135,6 +135,16 @@ let gGrid = {
   },
 
   /**
+   * Calculate the height for a number of rows up to the maximum rows
+   * @param rows Number of rows defauling to the max
+   */
+  _computeHeight: function Grid_computeHeight(rows) {
+    let {gridRows} = gGridPrefs;
+    rows = rows == null ? gridRows : Math.min(gridRows, rows);
+    return rows * this._cellHeight + GRID_BOTTOM_EXTRA + "px";
+  },
+
+  /**
    * Creates the DOM fragment that is re-used when creating sites.
    */
   _createSiteFragment: function Grid_createSiteFragment() {
@@ -183,11 +193,6 @@ let gGrid = {
     this._renderSites();
   },
 
-  _shouldRenderGrid : function Grid_shouldRenderGrid() {
-    let cellsLength = this._node.querySelectorAll(".newtab-cell").length;
-    return cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns);
-  },
-
   /**
    * Make sure the correct number of rows and columns are visible
    */
@@ -201,13 +206,8 @@ let gGrid = {
                                 GRID_WIDTH_EXTRA + "px";
   },
 
-  /**
-   * Calculate the height for a number of rows up to the maximum rows
-   * @param rows Number of rows defauling to the max
-   */
-  _computeHeight: function Grid_computeHeight(rows) {
-    let {gridRows} = gGridPrefs;
-    rows = rows == null ? gridRows : Math.min(gridRows, rows);
-    return rows * this._cellHeight + GRID_BOTTOM_EXTRA + "px";
+  _shouldRenderGrid : function Grid_shouldRenderGrid() {
+    let cellsLength = this._node.querySelectorAll(".newtab-cell").length;
+    return cellsLength != (gGridPrefs.gridRows * gGridPrefs.gridColumns);
   }
 };
