@@ -74,8 +74,9 @@ let gGrid = {
         this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
         this._cellHeight = refCell.offsetHeight + this._cellMargin;
         this._cellWidth = refCell.offsetWidth + this._cellMargin;
+        this._resizeGrid();
+        break;
 
-        // fallthrough to resize
       case "resize":
         this._resizeGrid();
         break;
