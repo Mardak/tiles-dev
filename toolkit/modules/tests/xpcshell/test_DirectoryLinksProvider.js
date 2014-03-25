@@ -70,7 +70,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
 add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let data = {
     "en-US": [{url: "http://example.com", title: "US"}],
-    "cn-ZH": [
+    "zh-CN": [
               {url: "http://example.net", title: "CN"},
               {url:"http://example.net/2", title: "CN2"}
     ],
@@ -140,7 +140,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
+  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
   Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
   let links = yield fetchData(provider);
