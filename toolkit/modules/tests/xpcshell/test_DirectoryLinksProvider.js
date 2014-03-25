@@ -69,10 +69,10 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
 
 add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let data = {
-    "en-US": [{"url":"http://example.com","title":"US"}],
+    "en-US": [{url: "http://example.com", title: "US"}],
     "cn-ZH": [
-              {"url":"http://example.net","title":"CN"},
-              {"url":"http://example.net/2","title":"CN2"}
+              {url: "http://example.net", title: "CN"},
+              {url:"http://example.net/2", title: "CN2"}
     ],
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
@@ -86,17 +86,25 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   do_check_eq(provider._linksURL, dataURI);
 
   let links;
+  let expected_data;
 
   links = yield fetchData(provider);
-  do_check_eq(links.length, 1)
+  do_check_eq(links.length, 1);
+  expected_data = [{url: "http://example.com", title: "US", frecency: 1000, lastVisitDate: 1}];
+  isIdentical(links, expected_data);
 
   Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
 
   links = yield fetchData(provider);
   do_check_eq(links.length, 2)
+  expected_data = [
+    {url: "http://example.net", title: "CN", frecency: 1000, lastVisitDate: 2},
+    {url: "http://example.net/2", title: "CN2", frecency: 1000, lastVisitDate: 1}
+  ];
+  isIdentical(links, expected_data);
 
   provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
+  Services.prefs.clearUserPref('general.useragent.locale');
   Services.prefs.clearUserPref(provider._prefs['linksURL']);
 });
 
@@ -111,7 +119,8 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
-  do_check_eq(links[0].title, "TestSource");
+  let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: 1000, lastVisitDate: 1}];
+  isIdentical(links, expectedData);
 
   // tests these 2 things:
   // 1. observer trigger on pref change
@@ -132,8 +141,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   let provider = DirectoryLinksProvider;
   Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
-  let dataURI = 'data:application/json,{"en-US":[{"url":"http://example.com","title":"example"}]}';
-  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
+  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
