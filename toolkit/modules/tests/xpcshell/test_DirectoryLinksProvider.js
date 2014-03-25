@@ -12,6 +12,7 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 
+const DIRECTORY_FRECENCY = 1000;
 const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
 
 function isIdentical(actual, expected) {
@@ -90,16 +91,16 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
 
   links = yield fetchData(provider);
   do_check_eq(links.length, 1);
-  expected_data = [{url: "http://example.com", title: "US", frecency: 1000, lastVisitDate: 1}];
+  expected_data = [{url: "http://example.com", title: "US", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
   isIdentical(links, expected_data);
 
-  Services.prefs.setCharPref('general.useragent.locale', 'cn-ZH');
+  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
 
   links = yield fetchData(provider);
   do_check_eq(links.length, 2)
   expected_data = [
-    {url: "http://example.net", title: "CN", frecency: 1000, lastVisitDate: 2},
-    {url: "http://example.net/2", title: "CN2", frecency: 1000, lastVisitDate: 1}
+    {url: "http://example.net", title: "CN", frecency: DIRECTORY_FRECENCY, lastVisitDate: 2},
+    {url: "http://example.net/2", title: "CN2", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}
   ];
   isIdentical(links, expected_data);
 
@@ -119,7 +120,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
-  let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: 1000, lastVisitDate: 1}];
+  let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
   isIdentical(links, expectedData);
 
   // tests these 2 things:
