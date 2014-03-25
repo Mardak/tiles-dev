@@ -137,7 +137,7 @@ let gGrid = {
 
   /**
    * Calculate the height for a number of rows up to the maximum rows
-   * @param rows Number of rows defauling to the max
+   * @param rows Number of rows defaulting to the max
    */
   _computeHeight: function Grid_computeHeight(rows) {
     let {gridRows} = gGridPrefs;
