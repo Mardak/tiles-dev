@@ -4045,7 +4045,7 @@
     "expires_in_version": "35",
     "kind": "enumerated",
     "n_values": 3,
-    "description": "Track click count on about:newtab directory tiles per type (sponsored, affiliate, organic)."
+    "description": "Track click count on about:newtab directory links per type (sponsored, affiliate, organic)."
   },
   "PANORAMA_INITIALIZATION_TIME_MS": {
     "expires_in_version": "never",
