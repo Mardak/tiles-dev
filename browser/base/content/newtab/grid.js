@@ -142,7 +142,7 @@ let gGrid = {
   _computeHeight: function Grid_computeHeight(aRows) {
     let {gridRows} = gGridPrefs;
     aRows = aRows === undefined ? gridRows : Math.min(gridRows, aRows);
-    return aRows * this._cellHeight + GRID_BOTTOM_EXTRA + "px";
+    return aRows * this._cellHeight + GRID_BOTTOM_EXTRA;
   },
 
   /**
@@ -201,8 +201,8 @@ let gGrid = {
     let availSpace = document.documentElement.clientHeight - this._cellMargin -
                      document.querySelector("#newtab-margin-top").offsetHeight;
     let visibleRows = Math.floor(availSpace / this._cellHeight);
-    this._node.style.height = this._computeHeight();
-    this._node.style.maxHeight = this._computeHeight(visibleRows);
+    this._node.style.height = this._computeHeight() + "px";
+    this._node.style.maxHeight = this._computeHeight(visibleRows) + "px";
     this._node.style.maxWidth = gGridPrefs.gridColumns * this._cellWidth +
                                 GRID_WIDTH_EXTRA + "px";
   },
