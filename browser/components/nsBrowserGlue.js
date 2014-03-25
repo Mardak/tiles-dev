@@ -477,8 +477,8 @@ BrowserGlue.prototype = {
 
     WebappManager.init();
     PageThumbs.init();
-    DirectoryLinksProvider.init();
     NewTabUtils.init();
+    DirectoryLinksProvider.init();
     NewTabUtils.links.addProvider(DirectoryLinksProvider);
     BrowserNewTabPreloader.init();
 #ifdef NIGHTLY_BUILD
