@@ -183,11 +183,11 @@ input[type=button] {
 
 .newtab-control.newtab-control-sponsored {
   bottom: -20px;
-  height: 16px;
-  -moz-margin-end: -4px;
+  height: 14px;
+  -moz-margin-end: -5px;
   opacity: 1;
   top: auto;
-  width: 16px;
+  width: 14px;
 }
 
 .newtab-site:not([type=sponsored]) .newtab-control-sponsored {

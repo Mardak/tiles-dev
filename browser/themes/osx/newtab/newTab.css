@@ -181,9 +181,9 @@
 }
 
 .newtab-control-sponsored {
-  background-position: -248px 0;
+  background-position: -249px -1px;
 }
 
 .newtab-control-sponsored:hover {
-  background-position: -264px 0;
+  background-position: -265px -1px;
 }
