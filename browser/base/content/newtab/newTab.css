@@ -135,10 +135,10 @@ input[type=button] {
 
 /* TITLES */
 .newtab-title {
-  bottom: -20px;
+  bottom: -21px;
   position: absolute;
   left: 0;
-  line-height: 20px;
+  line-height: 21px;
   right: 0;
   text-align: start;
   white-space: nowrap;
