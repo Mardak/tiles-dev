@@ -77,7 +77,7 @@
 @media (min-resolution: 2dppx) {
   #newtab-toggle {
     background-image: url(chrome://browser/skin/newtab/controls@2x.png);
-    background-size: 248px;
+    background-size: 296px;
   }
 }
 
@@ -144,7 +144,7 @@
 @media (min-resolution: 2dppx) {
   .newtab-control {
     background-image: url(chrome://browser/skin/newtab/controls@2x.png);
-    background-size: 248px;
+    background-size: 296px;
   }
 }
 
