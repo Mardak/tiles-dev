@@ -159,6 +159,12 @@ function clearHistory(aCallback) {
 
 function fillHistory(aLinks, aCallback) {
   let numLinks = aLinks.length;
+  if (!numLinks) {
+    if (aCallback)
+      executeSoon(aCallback);
+    return;
+  }
+
   let transitionLink = Ci.nsINavHistoryService.TRANSITION_LINK;
 
   for (let link of aLinks.reverse()) {
@@ -172,7 +178,7 @@ function fillHistory(aLinks, aCallback) {
       handleError: function () ok(false, "couldn't add visit to history"),
       handleResult: function () {},
       handleCompletion: function () {
-        if (--numLinks == 0)
+        if (--numLinks == 0 && aCallback)
           aCallback();
       }
     });
@@ -503,12 +509,18 @@ function createDragEvent(aEventType, aData) {
 
 /**
  * Resumes testing when all pages have been updated.
+ * @param aCallback Called when done. If not specified, TestRunner.next is used.
+ * @param aOnlyIfHidden If true, this resumes testing only when an update that
+ *                      applies to pre-loaded, hidden pages is observed.  If
+ *                      false, this resumes testing when any update is observed.
  */
-function whenPagesUpdated(aCallback) {
+function whenPagesUpdated(aCallback, aOnlyIfHidden=false) {
   let page = {
-    update: function () {
-      NewTabUtils.allPages.unregister(this);
-      executeSoon(aCallback || TestRunner.next);
+    update: function (onlyIfHidden=false) {
+      if (onlyIfHidden == aOnlyIfHidden) {
+        NewTabUtils.allPages.unregister(this);
+        executeSoon(aCallback || TestRunner.next);
+      }
     }
   };
 
