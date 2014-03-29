@@ -4,10 +4,11 @@
 function runTests() {
   yield setLinks("0");
   yield addNewTabPageTab();
+
   let site = getCell(0).node.querySelector(".newtab-site");
-  let sponsoredPanel = getContentDocument().getElementById("sponsored-panel");
-  let sponsoredButton = site.querySelector(".newtab-control-sponsored");
   site.setAttribute("type", "sponsored");
+
+  let sponsoredPanel = getContentDocument().getElementById("sponsored-panel");
   is(sponsoredPanel.state, "closed", "Sponsed panel must be closed");
 
   function continueOnceOn(event) {
@@ -19,11 +20,12 @@ function runTests() {
 
   // test sponsoredPanel appearing upon a click
   continueOnceOn("popupshown");
+  let sponsoredButton = site.querySelector(".newtab-control-sponsored");
   yield synthesizeNativeMouseClick(sponsoredButton);
   is(sponsoredPanel.state, "open", "Sponsored panel opens on click");
   ok(sponsoredButton.hasAttribute("panelShown"), "Sponsored button has panelShown attribute");
 
-  // test sponsoredPanel hiding after a lick
+  // test sponsoredPanel hiding after a click
   continueOnceOn("popuphidden");
   yield synthesizeNativeMouseClick(sponsoredButton);
   is(sponsoredPanel.state, "closed", "Sponsed panel hides on click");
