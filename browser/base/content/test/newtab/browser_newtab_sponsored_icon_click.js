@@ -10,20 +10,21 @@ function runTests() {
   site.setAttribute("type", "sponsored");
   is(sponsoredPanel.state, "closed", "Sponsed panel must be closed");
 
+  function continueOnceOn(event) {
+    sponsoredPanel.addEventListener(event, function listener() {
+      sponsoredPanel.removeEventListener(event, listener);
+      executeSoon(TestRunner.next);
+    });
+  }
+
   // test sponsoredPanel appearing upon a click
-  sponsoredPanel.addEventListener("popupshown", function onShown() {
-    sponsoredPanel.removeEventListener("popupshown", onShown, false);
-    executeSoon(() => TestRunner.next());
-  }, false);
+  continueOnceOn("popupshown");
   yield synthesizeNativeMouseClick(sponsoredButton);
   is(sponsoredPanel.state, "open", "Sponsored panel opens on click");
   ok(sponsoredButton.hasAttribute("panelShown"), "Sponsored button has panelShown attribute");
 
   // test sponsoredPanel hiding after a lick
-  sponsoredPanel.addEventListener("popuphidden", function onHidden() {
-    sponsoredPanel.removeEventListener("popuphidden", onHidden, false);
-    executeSoon(() => TestRunner.next());
-  }, false);
+  continueOnceOn("popuphidden");
   yield synthesizeNativeMouseClick(sponsoredButton);
   is(sponsoredPanel.state, "closed", "Sponsed panel hides on click");
   ok(!sponsoredButton.hasAttribute("panelShown"), "Sponsored button does not have panelShown attribute");
