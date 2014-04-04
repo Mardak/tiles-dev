@@ -69,14 +69,6 @@ let gGrid = {
   handleEvent: function Grid_handleEvent(aEvent) {
     switch (aEvent.type) {
       case "load":
-        // Save the cell's computed height/width including margin and border
-        let refCell = document.querySelector(".newtab-cell");
-        this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
-        this._cellHeight = refCell.offsetHeight + this._cellMargin;
-        this._cellWidth = refCell.offsetWidth + this._cellMargin;
-        this._resizeGrid();
-        break;
-
       case "resize":
         this._resizeGrid();
         break;
@@ -98,7 +90,6 @@ let gGrid = {
 
     // Render the grid again.
     this._render();
-    this._resizeGrid();
   },
 
   /**
@@ -191,6 +182,7 @@ let gGrid = {
   _render: function Grid_render() {
     if (this._shouldRenderGrid()) {
       this._renderGrid();
+      this._resizeGrid();
     }
 
     this._renderSites();
@@ -200,6 +192,19 @@ let gGrid = {
    * Make sure the correct number of rows and columns are visible
    */
   _resizeGrid: function Grid_resizeGrid() {
+    // Only compute sizes to resize the grid after the document has loaded
+    if (document.readyState != "complete") {
+      return;
+    }
+
+    // Save the cell's computed height/width including margin and border
+    if (this._cellMargin === undefined) {
+      let refCell = document.querySelector(".newtab-cell");
+      this._cellMargin = parseFloat(getComputedStyle(refCell).marginTop) * 2;
+      this._cellHeight = refCell.offsetHeight + this._cellMargin;
+      this._cellWidth = refCell.offsetWidth + this._cellMargin;
+    }
+
     let availSpace = document.documentElement.clientHeight - this._cellMargin -
                      document.querySelector("#newtab-margin-top").offsetHeight;
     let visibleRows = Math.floor(availSpace / this._cellHeight);
