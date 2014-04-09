@@ -4,10 +4,8 @@
 const PRELOAD_PREF = "browser.newtab.preload";
 
 function runTests() {
-  // store original value of browser.newtab.preload
-  let originalPreloadValue = Services.prefs.getBoolPref(PRELOAD_PREF);
-  // turn off preload to insure that a newtab page loads
-  Services.prefs.setBoolPref(PRELOAD_PREF,false);
+  // turn off preload to ensure that a newtab page loads
+  Services.prefs.setBoolPref(PRELOAD_PREF, false);
 
   // set up a test provider
   let afterLoadProvider = {
@@ -34,8 +32,7 @@ function runTests() {
 
   ok(getGrid()._cellMargin != null, "grid has a computed cell margin");
 
-  // remove afterload provider
+  // restore original state
   NewTabUtils.links.removeProvider(afterLoadProvider);
-  // restore original value of browser.newtab.preload
-  Services.prefs.setBoolPref(PRELOAD_PREF,originalPreloadValue);
+  Services.prefs.clearUserPref(PRELOAD_PREF);
 }
