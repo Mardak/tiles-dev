@@ -7,14 +7,13 @@ function runTests() {
   // turn off preload to ensure that a newtab page loads
   Services.prefs.setBoolPref(PRELOAD_PREF, false);
 
-  // set up a test provider
+  // add a test provider that waits for load
   let afterLoadProvider = {
     getLinks: function(callback) {
       this.callback = callback;
     },
     addObserver: function() {},
   };
-  // add afterload provider
   NewTabUtils.links.addProvider(afterLoadProvider);
 
   // wait until about:newtab loads before calling provider callback
