@@ -23,14 +23,16 @@ function runTests() {
   // call provider callback on "load" and insure grid is resized
   browser.addEventListener("load", function onLoad() {
     browser.removeEventListener("load", onLoad, true);
-    // let NewTabUtils.populateCache continue
-    afterLoadProvider.callback([]);
-    // terminate the yield
-    executeSoon(TestRunner.next);
+    // afterLoadProvider.callback has to be called asynchronously
+    // to make grid initilize after "load" event was handled
+    executeSoon(function () {
+      afterLoadProvider.callback([]);
+      TestRunner.next();
+    });
   }, true);
-  // wait for "load" handler to fire
+  // wait until afterLoadProvider.callback() fires
   yield true;
-  // if Grid is resized it must have _cellMargin defined
+  // if Grid is properly resized it must have _cellMargin defined
   ok(getGrid()._cellMargin != null);
   // remove afterload provider
   NewTabUtils.links.removeProvider(afterLoadProvider);
