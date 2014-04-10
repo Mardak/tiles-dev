@@ -47,6 +47,7 @@ let gGrid = {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
     this._render();
+    gLinks.populateCache(() => this._renderSites());
     addEventListener("load", this);
     addEventListener("resize", this);
   },
@@ -90,6 +91,7 @@ let gGrid = {
 
     // Render the grid again.
     this._render();
+    this._renderSites();
   },
 
   /**
@@ -184,8 +186,6 @@ let gGrid = {
       this._renderGrid();
       this._resizeGrid();
     }
-
-    this._renderSites();
   },
 
   /**

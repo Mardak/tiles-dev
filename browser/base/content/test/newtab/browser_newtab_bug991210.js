@@ -17,19 +17,18 @@ function runTests() {
   NewTabUtils.links.addProvider(afterLoadProvider);
 
   // wait until about:newtab loads before calling provider callback
-  let tab = gWindow.gBrowser.selectedTab = gWindow.gBrowser.addTab("about:newtab");
-  let browser = tab.linkedBrowser;
+  addNewTabPageTab();
+  let browser = gWindow.gBrowser.selectedTab.linkedBrowser;
   yield browser.addEventListener("load", function onLoad() {
     browser.removeEventListener("load", onLoad, true);
     // afterLoadProvider.callback has to be called asynchronously to make grid
     // initilize after "load" event was handled
-    executeSoon(function () {
-      afterLoadProvider.callback([]);
-      TestRunner.next();
-    });
+    executeSoon(() => afterLoadProvider.callback([]));
   }, true);
 
   ok(getGrid()._cellMargin != null, "grid has a computed cell margin");
+  ok(getGrid()._cellHeight != null, "grid has a computed cell height");
+  ok(getGrid()._cellWidth != null, "grid has a computed cell width");
 
   // restore original state
   NewTabUtils.links.removeProvider(afterLoadProvider);
