@@ -46,7 +46,7 @@ let gGrid = {
   init: function Grid_init() {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
-    this._render();
+    this._renderGrid();
     gLinks.populateCache(() => this._renderSites());
     addEventListener("load", this);
     addEventListener("resize", this);
@@ -90,7 +90,10 @@ let gGrid = {
     }, this);
 
     // Render the grid again.
-    this._render();
+    if (this._shouldRenderGrid()) {
+      this._renderGrid();
+      this._resizeGrid();
+    }
     this._renderSites();
   },
 
@@ -179,24 +182,9 @@ let gGrid = {
   },
 
   /**
-   * Renders the grid.
-   */
-  _render: function Grid_render() {
-    if (this._shouldRenderGrid()) {
-      this._renderGrid();
-      this._resizeGrid();
-    }
-  },
-
-  /**
    * Make sure the correct number of rows and columns are visible
    */
   _resizeGrid: function Grid_resizeGrid() {
-    // Only compute sizes to resize the grid after the document has loaded
-    if (document.readyState != "complete") {
-      return;
-    }
-
     // Save the cell's computed height/width including margin and border
     if (this._cellMargin === undefined) {
       let refCell = document.querySelector(".newtab-cell");
