@@ -73,7 +73,7 @@ function writeStringToFile(str, file) {
   return OS.File.writeAtomic(file, array);
 }
 
-function populateJsonFile(jsonData, jsonFile = "directoryLinks.json") {
+function writeJsonFile(jsonData, jsonFile = "directoryLinks.json") {
   let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
   return writeStringToFile(JSON.stringify(jsonData), directoryLinksFilePath);
 }
@@ -114,9 +114,9 @@ add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
 
-add_task(function test_DirectoryLinksProvider_populateJsonFile() {
+add_task(function test_DirectoryLinksProvider_writeJsonFile() {
   let obj = {a: 1};
-  yield populateJsonFile(obj);
+  yield writeJsonFile(obj);
   let readObject = yield readJsonFile();
   isIdentical(readObject, obj);
 });
@@ -164,7 +164,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let links;
   let expected_data;
 
-  yield populateJsonFile(data);
+  yield writeJsonFile(data);
   links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   expected_data = [{url: "http://example.com", title: "US", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -194,7 +194,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   provider.init();
   do_check_eq(provider._linksURL, kTestSource);
 
-  yield populateJsonFile(kTestLinksData);
+  yield writeJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -208,7 +208,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   do_check_eq(provider._linksURL, exampleUrl);
 
-  yield populateJsonFile({});
+  yield writeJsonFile({});
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
 
@@ -222,7 +222,7 @@ add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
   Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
-  yield populateJsonFile(kTestLinksData);
+  yield writeJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
   provider.reset();
