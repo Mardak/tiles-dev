@@ -32,6 +32,7 @@ registerCleanupFunction(function () {
   Services.prefs.clearUserPref(PREF_NEWTAB_ENABLED);
   Services.prefs.clearUserPref(PREF_NEWTAB_DIRECTORYSOURCE);
 
+  // Stop any update timers to prevent unexpected updates in later tests
   let timer = NewTabUtils.allPages._scheduleUpdateTimeout;
   if (timer) {
     clearTimeout(timer);
