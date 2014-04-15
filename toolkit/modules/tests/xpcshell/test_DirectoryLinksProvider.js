@@ -67,11 +67,15 @@ function fetchData(provider) {
   return deferred.promise;
 }
 
-function populateJsonFile(jsonData, jsonFile = "directoryLinks.json") {
+function writeStringToFile(str, file) {
   let encoder = new TextEncoder();
-  let array = encoder.encode(JSON.stringify(jsonData));
+  let array = encoder.encode(str);
+  return OS.File.writeAtomic(file, array);
+}
+
+function populateJsonFile(jsonData, jsonFile = "directoryLinks.json") {
   let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
-  return OS.File.writeAtomic(directoryLinksFilePath, array);
+  return writeStringToFile(JSON.stringify(jsonData), directoryLinksFilePath);
 }
 
 function readJsonFile(jsonFile = "directoryLinks.json") {
@@ -219,6 +223,23 @@ add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
   yield populateJsonFile(kTestLinksData);
+  let links = yield fetchData(provider);
+  do_check_eq(links.length, 0);
+  provider.reset();
+  Services.prefs.clearUserPref('general.useragent.locale')
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+});
+
+add_task(function test_DirectoryLinksProvider_getLinks_fromCorruptedFile() {
+  let provider = DirectoryLinksProvider;
+  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
+  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
+
+  // write incolmplete json to cache fike and trigger exception
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, "directoryLinks.json");
+  yield writeStringToFile('{"en_US": ', directoryLinksFilePath);
+
+  // links should be empty
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
   provider.reset();
