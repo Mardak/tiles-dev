@@ -37,7 +37,7 @@ let gGrid = {
   get sites() [cell.site for each (cell in this.cells)],
 
   // Tells whether the grid has already been initialized.
-  get ready() !!this._node,
+  get ready() !!this._ready,
 
   /**
    * Initializes the grid.
@@ -47,7 +47,10 @@ let gGrid = {
     this._node = document.getElementById("newtab-grid");
     this._createSiteFragment();
     this._renderGrid();
-    gLinks.populateCache(() => this._renderSites());
+    gLinks.populateCache(() => {
+      this._renderSites();
+      this._ready = true;
+    });
     addEventListener("load", this);
     addEventListener("resize", this);
   },
