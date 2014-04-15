@@ -26,9 +26,14 @@ function runTests() {
     executeSoon(() => afterLoadProvider.callback([]));
   }, true);
 
-  ok(getGrid()._cellMargin != null, "grid has a computed cell margin");
-  ok(getGrid()._cellHeight != null, "grid has a computed cell height");
-  ok(getGrid()._cellWidth != null, "grid has a computed cell width");
+  let {_cellMargin, _cellHeight, _cellWidth, node} = getGrid();
+  isnot(_cellMargin, null, "grid has a computed cell margin");
+  isnot(_cellHeight, null, "grid has a computed cell height");
+  isnot(_cellWidth, null, "grid has a computed cell width");
+  let {height, maxHeight, maxWidth} = node.style;
+  isnot(height, "", "grid has a computed grid height");
+  isnot(maxHeight, "", "grid has a computed grid max-height");
+  isnot(maxWidth, "", "grid has a computed grid max-width");
 
   // restore original state
   NewTabUtils.links.removeProvider(afterLoadProvider);
