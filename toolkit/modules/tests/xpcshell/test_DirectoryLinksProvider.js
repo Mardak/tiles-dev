@@ -19,7 +19,8 @@ do_get_profile();
 
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
-const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
+const kTestLinksData = {"en-US": [{"url": "http://example.com", "title": "TestSource"}]};
+const kTestSource = "data:application/json," + JSON.stringify(kTestLinksData);
 
 // httpd settings
 var server;
@@ -66,7 +67,14 @@ function fetchData(provider) {
   return deferred.promise;
 }
 
-function readJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
+function populateJsonFile(jsonData, jsonFile = "directoryLinks.json") {
+  let encoder = new TextEncoder();
+  let array = encoder.encode(JSON.stringify(jsonData));
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return OS.File.writeAtomic(directoryLinksFilePath, array);
+}
+
+function readJsonFile(jsonFile = "directoryLinks.json") {
   let decoder = new TextDecoder();
   let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
   return OS.File.read(directoryLinksFilePath).then(array => {
@@ -100,6 +108,13 @@ add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
   yield DirectoryLinksProvider._requestRemoteDirectoryContent(kExampleSource);
   let fileObject = yield readJsonFile();
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
+});
+
+add_task(function test_DirectoryLinksProvider_populateJsonFile() {
+  let obj = {a: 1};
+  yield populateJsonFile(obj);
+  let readObject = yield readJsonFile();
+  isIdentical(readObject, obj);
 });
 
 add_task(function test_DirectoryLinksProvider__linkObservers() {
@@ -145,6 +160,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let links;
   let expected_data;
 
+  yield populateJsonFile(data);
   links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   expected_data = [{url: "http://example.com", title: "US", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -174,6 +190,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   provider.init();
   do_check_eq(provider._linksURL, kTestSource);
 
+  yield populateJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -187,6 +204,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   do_check_eq(provider._linksURL, exampleUrl);
 
+  yield populateJsonFile({});
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
 
@@ -200,6 +218,7 @@ add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
   Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
 
+  yield populateJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
   provider.reset();

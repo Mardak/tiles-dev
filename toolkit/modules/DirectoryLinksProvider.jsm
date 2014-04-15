@@ -25,6 +25,10 @@ const XMLHttpRequest = Components.Constructor("@mozilla.org/xmlextras/xmlhttpreq
 // The filename where directory links are stored locally
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 
+XPCOMUtils.defineLazyGetter(this, "gTextDecoder", () => {
+  return new TextDecoder();
+});
+
 /**
  * Gets the currently selected locale for display.
  * @return  the selected locale or "en-US" if none is selected
@@ -74,6 +78,9 @@ const LINK_TYPES = Object.freeze([
   "affiliate",
   "organic",
 ]);
+
+// The filename where directory links are stored locally
+const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 
 /**
  * Singleton that serves as the provider of directory links.
@@ -196,11 +203,41 @@ let DirectoryLinksProvider = {
   },
 
   /**
+   * Reads directory links file and parses its content
+   * @param retruns a promise resolved to valid json or []
+   */
+  _readDirectoryLinksFile: function DirectoryLinksProvider_readDirectoryLinksFile(aCallback) {
+    let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+    try {
+      OS.File.read(directoryLinksFilePath).then(binaryData => {
+        let output;
+        try {
+          let locale = getLocale();
+          let json = gTextDecoder.decode(binaryData);
+          output = JSON.parse(json)[locale];
+        }
+        catch (e) {
+          Cu.reportError(e);
+        }
+        aCallback(output || []);
+      },
+      error => {
+        Cu.reportError(error);
+        aCallback([]);
+      });
+    }
+    catch (e) {
+      Cu.reportError(new Error("failed to read " + directoryLinksFile));
+      aCallback([]);
+    }
+  },
+
+  /**
    * Gets the current set of directory links.
    * @param aCallback The function that the array of links is passed to.
    */
   getLinks: function DirectoryLinksProvider_getLinks(aCallback) {
-    this._fetchLinks(rawLinks => {
+    this._readDirectoryLinksFile(rawLinks => {
       // all directory links have a frecency of DIRECTORY_FRECENCY
       aCallback(rawLinks.map((link, position) => {
         link.frecency = DIRECTORY_FRECENCY;
