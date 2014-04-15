@@ -92,6 +92,19 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   return OS.File.remove(directoryLinksFilePath);
 }
 
+function makeTestProvider(options = {}) {
+  let provider = DirectoryLinksProvider;
+  Services.prefs.setCharPref('general.useragent.locale', options.locale || "en-US");
+  Services.prefs.setCharPref(provider._prefs['linksURL'], options.linksURL || kTestSource);
+  return provider;
+}
+
+function clearTestProvider(provider) {
+  provider.reset();
+  Services.prefs.clearUserPref('general.useragent.locale')
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+}
+
 function run_test() {
   // Set up a mock HTTP server to serve a directory page
   server = new HttpServer();
@@ -139,8 +152,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
   provider._removeObservers();
   do_check_eq(provider._observers.length, 0);
 
-  provider.reset();
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider__linksURL_locale() {
@@ -153,9 +165,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
+  let provider = makeTestProvider({linksURL: dataURI});
 
   // set up the observer
   provider.init();
@@ -180,16 +190,11 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   ];
   isIdentical(links, expected_data);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale');
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider__prefObserver_url() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
+  let provider = makeTestProvider();
   // set up the observer
   provider.init();
   do_check_eq(provider._linksURL, kTestSource);
@@ -212,37 +217,24 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
+  let provider = makeTestProvider({locale: 'zh-CN'});
   yield writeJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider_getLinks_fromCorruptedFile() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
+  let provider = makeTestProvider();
   // write incolmplete json to cache fike and trigger exception
   let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, "directoryLinks.json");
   yield writeStringToFile('{"en_US": ', directoryLinksFilePath);
-
   // links should be empty
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
