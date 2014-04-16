@@ -22,9 +22,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Promise",
 
 const XMLHttpRequest = Components.Constructor("@mozilla.org/xmlextras/xmlhttprequest;1", "nsIXMLHttpRequest");
 
-// The filename where directory links are stored locally
-const DIRECTORY_LINKS_FILE = "directoryLinks.json";
-
 XPCOMUtils.defineLazyGetter(this, "gTextDecoder", () => {
   return new TextDecoder();
 });
@@ -73,14 +70,14 @@ const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directorySource";
 // The frecency of a directory link
 const DIRECTORY_FRECENCY = 1000;
 
+// The filename where directory links are stored locally
+const DIRECTORY_LINKS_FILE = "directoryLinks.json";
+
 const LINK_TYPES = Object.freeze([
   "sponsored",
   "affiliate",
   "organic",
 ]);
-
-// The filename where directory links are stored locally
-const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 
 /**
  * Singleton that serves as the provider of directory links.
