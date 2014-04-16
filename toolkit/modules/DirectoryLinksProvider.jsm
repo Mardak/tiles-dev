@@ -12,9 +12,18 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/osfile.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
   "resource://gre/modules/NetUtil.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Promise",
+  "resource://gre/modules/Promise.jsm");
+
+const XMLHttpRequest = Components.Constructor("@mozilla.org/xmlextras/xmlhttprequest;1", "nsIXMLHttpRequest");
+
+// The filename where directory links are stored locally
+const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 
 /**
  * Gets the currently selected locale for display.
@@ -150,6 +159,40 @@ let DirectoryLinksProvider = {
       Cu.reportError(e);
       aCallback([]);
     }
+  },
+
+  /**
+   * fetches the current set of directory links from a url and stores in a cache file
+   * @return promise resolved upon file write completion
+   */
+  _requestRemoteDirectoryContent: function(url) {
+    let deferred = Promise.defer();
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.overrideMimeType("application/json");
+
+    let self = this;
+    xmlHttp.onload = function(aResponse) {
+      Task.spawn(function() {
+        try {
+          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+          yield OS.File.writeAtomic(directoryLinksFilePath, this.responseText);
+          deferred.resolve();
+        } catch(e) {
+          Cu.reportError("Error writing server response to " + self._remoteTilesURL + ": " + e);
+          deferred.reject("Error writing server response");
+        }
+      }.bind(this));
+    };
+
+    xmlHttp.onerror = function(e) {
+      Cu.reportError("Error " + e.target.status + " occurred while requesting directory content.");
+      deferred.reject("Error downloading directory request");
+    };
+
+    xmlHttp.open('GET', url);
+    xmlHttp.setRequestHeader("Connection", "close");
+    xmlHttp.send();
+    return deferred.promise;
   },
 
   /**
