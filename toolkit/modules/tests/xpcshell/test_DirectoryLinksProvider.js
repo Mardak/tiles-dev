@@ -11,9 +11,34 @@ const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
+Cu.import("resource://gre/modules/Http.jsm");
+Cu.import("resource://testing-common/httpd.js");
+Cu.import("resource://gre/modules/osfile.jsm")
 
+do_get_profile();
+
+const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
-const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
+const kTestLinksData = {"en-US": [{"url": "http://example.com", "title": "TestSource"}]};
+const kTestSource = "data:application/json," + JSON.stringify(kTestLinksData);
+
+// httpd settings
+var server;
+const kDefaultServerPort = 9000;
+const kBaseUrl = "http://localhost:" + kDefaultServerPort;
+const kExamplePath = "/exampleTest";
+const kExampleSource = kBaseUrl + kExamplePath;
+
+const kHttpHandlerData = {};
+kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"TestSource"}]};
+
+function getHttpHandler(path) {
+  return function(aRequest, aResponse) {
+    aResponse.setStatusLine(null, 200, "OK");
+    aResponse.setHeader("Content-Type", "application/json");
+    aResponse.write("" + JSON.stringify(kHttpHandlerData[path]));
+  };
+}
 
 function isIdentical(actual, expected) {
   if (expected == null) {
@@ -42,9 +67,72 @@ function fetchData(provider) {
   return deferred.promise;
 }
 
-function run_test() {
-  run_next_test();
+function writeStringToFile(str, file) {
+  let encoder = new TextEncoder();
+  let array = encoder.encode(str);
+  return OS.File.writeAtomic(file, array);
 }
+
+function writeJsonFile(jsonData, jsonFile = "directoryLinks.json") {
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return writeStringToFile(JSON.stringify(jsonData), directoryLinksFilePath);
+}
+
+function readJsonFile(jsonFile = "directoryLinks.json") {
+  let decoder = new TextDecoder();
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return OS.File.read(directoryLinksFilePath).then(array => {
+    let json = decoder.decode(array);
+    return JSON.parse(json);
+  });
+}
+
+function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return OS.File.remove(directoryLinksFilePath);
+}
+
+function makeTestProvider(options = {}) {
+  let provider = DirectoryLinksProvider;
+  Services.prefs.setCharPref('general.useragent.locale', options.locale || "en-US");
+  Services.prefs.setCharPref(provider._prefs['linksURL'], options.linksURL || kTestSource);
+  return provider;
+}
+
+function clearTestProvider(provider) {
+  provider.reset();
+  Services.prefs.clearUserPref('general.useragent.locale')
+  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+}
+
+function run_test() {
+  // Set up a mock HTTP server to serve a directory page
+  server = new HttpServer();
+  server.registerPathHandler(kExamplePath, getHttpHandler(kExamplePath));
+  server.start(kDefaultServerPort);
+
+  run_next_test();
+
+  // Teardown.
+  do_register_cleanup(function() {
+    server.stop(function() { });
+  });
+}
+
+add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
+  yield cleanJsonFile();
+  // this must trigger directory links json download and save it to cache file
+  yield DirectoryLinksProvider._requestRemoteDirectoryContent(kExampleSource);
+  let fileObject = yield readJsonFile();
+  isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
+});
+
+add_task(function test_DirectoryLinksProvider_writeJsonFile() {
+  let obj = {a: 1};
+  yield writeJsonFile(obj);
+  let readObject = yield readJsonFile();
+  isIdentical(readObject, obj);
+});
 
 add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();
@@ -64,8 +152,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
   provider._removeObservers();
   do_check_eq(provider._observers.length, 0);
 
-  provider.reset();
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider__linksURL_locale() {
@@ -78,9 +165,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
+  let provider = makeTestProvider({linksURL: dataURI});
 
   // set up the observer
   provider.init();
@@ -89,6 +174,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   let links;
   let expected_data;
 
+  yield writeJsonFile(data);
   links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   expected_data = [{url: "http://example.com", title: "US", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -104,20 +190,16 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   ];
   isIdentical(links, expected_data);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale');
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider__prefObserver_url() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
+  let provider = makeTestProvider();
   // set up the observer
   provider.init();
   do_check_eq(provider._linksURL, kTestSource);
 
+  yield writeJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
   let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
@@ -131,22 +213,28 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   do_check_eq(provider._linksURL, exampleUrl);
 
+  yield writeJsonFile({});
   let newLinks = yield fetchData(provider);
   isIdentical(newLinks, []);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
 });
 
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
+  let provider = makeTestProvider({locale: 'zh-CN'});
+  yield writeJsonFile(kTestLinksData);
   let links = yield fetchData(provider);
   do_check_eq(links.length, 0);
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  clearTestProvider(provider);
+});
+
+add_task(function test_DirectoryLinksProvider_getLinks_fromCorruptedFile() {
+  let provider = makeTestProvider();
+  // write incolmplete json to cache fike and trigger exception
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, "directoryLinks.json");
+  yield writeStringToFile('{"en_US": ', directoryLinksFilePath);
+  // links should be empty
+  let links = yield fetchData(provider);
+  do_check_eq(links.length, 0);
+  clearTestProvider(provider);
 });
