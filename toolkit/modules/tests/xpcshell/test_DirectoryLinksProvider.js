@@ -11,9 +11,33 @@ const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
+Cu.import("resource://gre/modules/Http.jsm");
+Cu.import("resource://testing-common/httpd.js");
+Cu.import("resource://gre/modules/osfile.jsm")
 
+do_get_profile();
+
+const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
 const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
+
+// httpd settings
+var server;
+const kDefaultServerPort = 9000;
+const kBaseUrl = "http://localhost:" + kDefaultServerPort;
+const kExamplePath = "/exampleTest";
+const kExampleSource = kBaseUrl + kExamplePath;
+
+const kHttpHandlerData = {};
+kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"TestSource"}]};
+
+function getHttpHandler(path) {
+  return function(aRequest, aResponse) {
+    aResponse.setStatusLine(null, 200, "OK");
+    aResponse.setHeader("Content-Type", "application/json");
+    aResponse.write("" + JSON.stringify(kHttpHandlerData[path]));
+  };
+}
 
 function isIdentical(actual, expected) {
   if (expected == null) {
@@ -42,9 +66,41 @@ function fetchData(provider) {
   return deferred.promise;
 }
 
-function run_test() {
-  run_next_test();
+function readJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
+  let decoder = new TextDecoder();
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return OS.File.read(directoryLinksFilePath).then(array => {
+    let json = decoder.decode(array);
+    return JSON.parse(json);
+  });
 }
+
+function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  return OS.File.remove(directoryLinksFilePath);
+}
+
+function run_test() {
+  // Set up a mock HTTP server to serve a directory page
+  server = new HttpServer();
+  server.registerPathHandler(kExamplePath, getHttpHandler(kExamplePath));
+  server.start(kDefaultServerPort);
+
+  run_next_test();
+
+  // Teardown.
+  do_register_cleanup(function() {
+    server.stop(function() { });
+  });
+}
+
+add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
+  yield cleanJsonFile();
+  // this must trigger directory links json download and save it to cache file
+  yield DirectoryLinksProvider._requestRemoteDirectoryContent(kExampleSource);
+  let fileObject = yield readJsonFile();
+  isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
+});
 
 add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();
