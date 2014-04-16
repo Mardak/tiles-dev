@@ -134,38 +134,6 @@ let DirectoryLinksProvider = {
   },
 
   /**
-   * Fetches the current set of directory links.
-   * @param aCallback a callback that is provided a set of links.
-   */
-  _fetchLinks: function DirectoryLinksProvider_fetchLinks(aCallback) {
-    try {
-      NetUtil.asyncFetch(this._linksURL, (aInputStream, aResult, aRequest) => {
-        let output;
-        if (Components.isSuccessCode(aResult)) {
-          try {
-            let json = NetUtil.readInputStreamToString(aInputStream,
-                                                       aInputStream.available(),
-                                                       {charset: "UTF-8"});
-            let locale = getLocale();
-            output = JSON.parse(json)[locale];
-          }
-          catch (e) {
-            Cu.reportError(e);
-          }
-        }
-        else {
-          Cu.reportError(new Error("the fetch of " + this._linksURL + "was unsuccessful"));
-        }
-        aCallback(output || []);
-      });
-    }
-    catch (e) {
-      Cu.reportError(e);
-      aCallback([]);
-    }
-  },
-
-  /**
    * fetches the current set of directory links from a url and stores in a cache file
    * @return promise resolved upon file write completion
    */
