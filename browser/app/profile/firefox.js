@@ -1325,6 +1325,9 @@ pref("browser.newtabpage.columns", 3);
 
 pref("browser.newtabpage.directory.source", "data:application/json,{}");
 
+// last directory download time in millisceonds
+pref("browser.newtabpage.directory.lastDownload", 0);
+
 // Enable the DOM fullscreen API.
 pref("full-screen-api.enabled", true);
 

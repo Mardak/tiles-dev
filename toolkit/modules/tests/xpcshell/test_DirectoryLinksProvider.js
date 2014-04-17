@@ -25,6 +25,7 @@ const kTestSource = 'data:application/json,' + JSON.stringify(kSourceData);
 // DirectoryLinksProvider preferences
 const kLocalePref = DirectoryLinksProvider._observedPrefs.prefSelectedLocale;
 const kSourceUrlPref = DirectoryLinksProvider._observedPrefs.linksURL;
+const kLastDownloadPref = "browser.newtabpage.directory.lastDownload";
 
 // httpd settings
 var server;
@@ -97,6 +98,7 @@ function setupDirectoryLinksProvider(options = {}) {
   DirectoryLinksProvider.init();
   Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
   Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestSource);
+  Services.prefs.setIntPref(kLastDownloadPref, options.lastDownload || 0);
 }
 
 function cleanDirectoryLinksProvider() {
@@ -236,5 +238,51 @@ add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
   setupDirectoryLinksProvider({locale: 'zh-CN'});
   let links = yield fetchData();
   do_check_eq(links.length, 0);
+  cleanDirectoryLinksProvider();
+});
+
+add_task(function test_DirectoryLinksProvider_needsDownload() {
+  // test timestamping
+  Services.prefs.setIntPref(kLastDownloadPref, 0);
+  do_check_true(DirectoryLinksProvider._needsDownload());
+  Services.prefs.setIntPref(kLastDownloadPref, Date.now()/1000);
+  do_check_false(DirectoryLinksProvider._needsDownload());
+  Services.prefs.setIntPref(kLastDownloadPref, (Date.now()/1000 - 60*60*24 + 1));
+  do_check_true(DirectoryLinksProvider._needsDownload());
+  Services.prefs.setIntPref(kLastDownloadPref, 0);
+});
+
+add_task(function test_DirectoryLinksProvider_fetchDirectoryContent() {
+  setupDirectoryLinksProvider();
+
+  yield cleanJsonFile();
+  yield DirectoryLinksProvider._fetchDirectoryContent();
+
+  // we should have fetched a new file
+  let data = yield readJsonFile();
+  isIdentical(data, kSourceData);
+
+  // inspect lastDownload timestamp which should be few seconds less then now()
+  let lastDownload = Services.prefs.getIntPref(kLastDownloadPref);
+  do_check_true((Date.now()/1000 - lastDownload) < 5);
+
+  // attempt to download again - the timestamp should not change
+  yield DirectoryLinksProvider._fetchDirectoryContent();
+  do_check_eq(Services.prefs.getIntPref(kLastDownloadPref), lastDownload);
+
+  // clean the file and force the download
+  yield cleanJsonFile();
+  yield DirectoryLinksProvider._fetchDirectoryContent(true);
+  data = yield readJsonFile();
+  isIdentical(data, kSourceData);
+
+  // make sure that failed download does not corrupt the file, nor changes lastDownload
+  lastDownload = Services.prefs.getIntPref(kLastDownloadPref);
+  Services.prefs.setCharPref(kSourceUrlPref, "http://");
+  yield DirectoryLinksProvider._fetchDirectoryContent(true);
+  data = yield readJsonFile();
+  isIdentical(data, kSourceData);
+  do_check_eq(Services.prefs.getIntPref(kLastDownloadPref), lastDownload);
+
   cleanDirectoryLinksProvider();
 });
