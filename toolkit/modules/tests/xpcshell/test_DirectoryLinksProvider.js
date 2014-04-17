@@ -19,7 +19,8 @@ do_get_profile();
 
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
-const kTestSource = 'data:application/json,{"en-US": [{"url":"http://example.com","title":"TestSource"}]}';
+const kSourceData = '{"en-US": [{"url":"http://example.com","title":"LocalSource"}]}';
+const kTestSource = 'data:application/json,' + kSourceData;
 
 // httpd settings
 var server;
@@ -29,7 +30,7 @@ const kExamplePath = "/exampleTest";
 const kExampleSource = kBaseUrl + kExamplePath;
 
 const kHttpHandlerData = {};
-kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"TestSource"}]};
+kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"RemoteSource"}]};
 
 function getHttpHandler(path) {
   return function(aRequest, aResponse) {
@@ -94,10 +95,18 @@ function run_test() {
   });
 }
 
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks() {
+  yield cleanJsonFile();
+  // Trigger cache of data or chrome uri files in profD
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
+  let fileObject = yield readJsonFile();
+  isIdentical(fileObject, JSON.parse(kSourceData));
+});
+
 add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
   yield cleanJsonFile();
   // this must trigger directory links json download and save it to cache file
-  yield DirectoryLinksProvider._requestRemoteDirectoryContent(kExampleSource);
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleSource);
   let fileObject = yield readJsonFile();
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
@@ -176,7 +185,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 
   let links = yield fetchData(provider);
   do_check_eq(links.length, 1);
-  let expectedData =  [{url: "http://example.com", title: "TestSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
+  let expectedData =  [{url: "http://example.com", title: "LocalSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
   isIdentical(links, expectedData);
 
   // tests these 2 things:
