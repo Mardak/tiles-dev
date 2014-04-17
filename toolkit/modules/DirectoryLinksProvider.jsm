@@ -12,7 +12,6 @@ const Cu = Components.utils;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
@@ -164,22 +163,20 @@ let DirectoryLinksProvider = {
   _fetchAndCacheLinks: function DirectoryLinksProvider_fetchAndCacheLinks(uri) {
     let deferred = Promise.defer();
 
-    NetUtil.asyncFetch(uri, (aInputStream, aResult, aRequest) => {
-      if (Components.isSuccessCode(aResult)) {
-        let json = NetUtil.readInputStreamToString(aInputStream,
-                                                   aInputStream.available(),
+    NetUtil.asyncFetch(uri, (inputStream, result, request) => {
+      if (Components.isSuccessCode(result)) {
+        let json = NetUtil.readInputStreamToString(inputStream,
+                                                   inputStream.available(),
                                                    {charset: "UTF-8"});
-        Task.spawn(function() {
-          try {
-            let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
-            yield OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
-              .then(deferred.resolve());
-          }
-          catch (e) {
-            deferred.reject("Error writing uri data in profD: " + e);
-            Cu.reportError(e);
-          }
-        });
+        try {
+          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+          OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
+            .then(deferred.resolve);
+        }
+        catch (e) {
+          deferred.reject("Error writing uri data in profD: " + e);
+          Cu.reportError(e);
+        }
       }
       else {
         deferred.reject("Error fetching " + uri);
