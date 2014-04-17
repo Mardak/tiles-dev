@@ -166,15 +166,9 @@ let DirectoryLinksProvider = {
         let json = NetUtil.readInputStreamToString(inputStream,
                                                    inputStream.available(),
                                                    {charset: "UTF-8"});
-        try {
-          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
-          OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
-            .then(deferred.resolve);
-        }
-        catch (e) {
-          deferred.reject("Error writing uri data in profD: " + e);
-          Cu.reportError(e);
-        }
+        let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+        OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
+          .then(deferred.resolve, () => deferred.reject("Error writing uri data in profD."));
       }
       else {
         deferred.reject("Error fetching " + uri);
