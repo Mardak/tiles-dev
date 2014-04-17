@@ -29,7 +29,7 @@ const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
 const PREF_SELECTED_LOCALE = "general.useragent.locale";
 
 // The preference that tells where to obtain directory links
-const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directorySource";
+const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directory.source";
 
 // The frecency of a directory link
 const DIRECTORY_FRECENCY = 1000;
