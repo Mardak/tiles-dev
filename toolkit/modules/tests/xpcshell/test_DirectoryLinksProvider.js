@@ -120,7 +120,7 @@ function run_test() {
   });
 }
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks() {
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_local() {
   yield cleanJsonFile();
   // Trigger cache of data or chrome uri files in profD
   yield DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
@@ -128,7 +128,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks() {
   isIdentical(fileObject, JSON.parse(kSourceData));
 });
 
-add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
   yield cleanJsonFile();
   // this must trigger directory links json download and save it to cache file
   yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleSource);
