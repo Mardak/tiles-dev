@@ -19,8 +19,8 @@ do_get_profile();
 
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
-const kSourceData = '{"en-US": [{"url":"http://example.com","title":"LocalSource"}]}';
-const kTestSource = 'data:application/json,' + kSourceData;
+const kSourceData = {"en-US": [{"url":"http://example.com","title":"LocalSource"}]};
+const kTestSource = 'data:application/json,' + JSON.stringify(kSourceData);
 
 // DirectoryLinksProvider preferences
 const kLocalePref = DirectoryLinksProvider._prefs.prefSelectedLocale;
@@ -125,7 +125,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_local() {
   // Trigger cache of data or chrome uri files in profD
   yield DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
   let fileObject = yield readJsonFile();
-  isIdentical(fileObject, JSON.parse(kSourceData));
+  isIdentical(fileObject, kSourceData);
 });
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
