@@ -22,6 +22,10 @@ const DIRECTORY_FRECENCY = 1000;
 const kSourceData = '{"en-US": [{"url":"http://example.com","title":"LocalSource"}]}';
 const kTestSource = 'data:application/json,' + kSourceData;
 
+// DirectoryLinksProvider preferences
+const kLocalePref = DirectoryLinksProvider._prefs.prefSelectedLocale;
+const kSourceUrlPref = DirectoryLinksProvider._prefs.linksURL;
+
 // httpd settings
 var server;
 const kDefaultServerPort = 9000;
@@ -58,10 +62,10 @@ function isIdentical(actual, expected) {
   }
 }
 
-function fetchData(provider) {
+function fetchData() {
   let deferred = Promise.defer();
 
-  provider.getLinks(linkData => {
+  DirectoryLinksProvider.getLinks(linkData => {
     deferred.resolve(linkData);
   });
   return deferred.promise;
@@ -79,6 +83,27 @@ function readJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
 function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
   return OS.File.remove(directoryLinksFilePath);
+}
+
+function setDirectorySourceUrl(linksUrl) {
+  if (linksUrl) {
+    Services.prefs.setCharPref(kSourceUrlPref, linksUrl);
+  }
+  else {
+    Services.prefs.clearUserPref(kSourceUrlPref);
+  }
+}
+
+function setupDirectoryLinksProvider(options = {}) {
+  DirectoryLinksProvider.init();
+  Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
+  setDirectorySourceUrl(options.linksURL || kTestSource);
+}
+
+function cleanDirectoryLinksProvider() {
+  DirectoryLinksProvider.reset();
+  Services.prefs.clearUserPref(kLocalePref);
+  setDirectorySourceUrl();
 }
 
 function run_test() {
@@ -111,6 +136,7 @@ add_task(function test_DirectoryLinksProvider_requestRemoteDirectoryContent() {
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
 
+// to test onManyLinksChanged observer, explicitly bypass setupDirectoryLinksProvider
 add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();
   let testObserver = {
@@ -119,18 +145,16 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
     }
   }
 
-  let provider = DirectoryLinksProvider;
-  provider.init();
-  provider.addObserver(testObserver);
-  do_check_eq(provider._observers.length, 1);
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
+  DirectoryLinksProvider.init();
+  DirectoryLinksProvider.addObserver(testObserver);
+  do_check_eq(DirectoryLinksProvider._observers.length, 1);
+  setDirectorySourceUrl(kTestSource);
 
   yield deferred.promise;
-  provider._removeObservers();
-  do_check_eq(provider._observers.length, 0);
+  DirectoryLinksProvider._removeObservers();
+  do_check_eq(DirectoryLinksProvider._observers.length, 0);
 
-  provider.reset();
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  cleanDirectoryLinksProvider();
 });
 
 add_task(function test_DirectoryLinksProvider__linksURL_locale() {
@@ -143,25 +167,20 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref(provider._prefs['linksURL'], dataURI);
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
-
-  // set up the observer
-  provider.init();
-  do_check_eq(provider._linksURL, dataURI);
+  setupDirectoryLinksProvider({linksURL: dataURI});
+  do_check_eq(DirectoryLinksProvider._linksURL, dataURI);
 
   let links;
   let expected_data;
 
-  links = yield fetchData(provider);
+  links = yield fetchData();
   do_check_eq(links.length, 1);
   expected_data = [{url: "http://example.com", title: "US", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
   isIdentical(links, expected_data);
 
   Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
 
-  links = yield fetchData(provider);
+  links = yield fetchData();
   do_check_eq(links.length, 2)
   expected_data = [
     {url: "http://example.net", title: "CN", frecency: DIRECTORY_FRECENCY, lastVisitDate: 2},
@@ -169,49 +188,34 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   ];
   isIdentical(links, expected_data);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale');
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  cleanDirectoryLinksProvider();
 });
 
 add_task(function test_DirectoryLinksProvider__prefObserver_url() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'en-US');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
+  setupDirectoryLinksProvider({linksURL: kTestSource});
+  do_check_eq(DirectoryLinksProvider._linksURL, kTestSource);
 
-  // set up the observer
-  provider.init();
-  do_check_eq(provider._linksURL, kTestSource);
-
-  let links = yield fetchData(provider);
+  let links = yield fetchData();
   do_check_eq(links.length, 1);
   let expectedData =  [{url: "http://example.com", title: "LocalSource", frecency: DIRECTORY_FRECENCY, lastVisitDate: 1}];
   isIdentical(links, expectedData);
 
   // tests these 2 things:
-  // 1. observer trigger on pref change
-  // 2. invalid source url
+  // 1. _linksURL is properly set after the pref change
+  // 2. invalid source url is correctly handled
   let exampleUrl = 'http://example.com/bad';
-  Services.prefs.setCharPref(provider._prefs['linksURL'], exampleUrl);
+  setDirectorySourceUrl(exampleUrl);
+  do_check_eq(DirectoryLinksProvider._linksURL, exampleUrl);
 
-  do_check_eq(provider._linksURL, exampleUrl);
-
-  let newLinks = yield fetchData(provider);
+  let newLinks = yield fetchData();
   isIdentical(newLinks, []);
 
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  cleanDirectoryLinksProvider();
 });
 
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
-  let provider = DirectoryLinksProvider;
-  Services.prefs.setCharPref('general.useragent.locale', 'zh-CN');
-  Services.prefs.setCharPref(provider._prefs['linksURL'], kTestSource);
-
-  let links = yield fetchData(provider);
+  setupDirectoryLinksProvider({locale: 'zh-CN'});
+  let links = yield fetchData();
   do_check_eq(links.length, 0);
-  provider.reset();
-  Services.prefs.clearUserPref('general.useragent.locale')
-  Services.prefs.clearUserPref(provider._prefs['linksURL']);
+  cleanDirectoryLinksProvider();
 });
