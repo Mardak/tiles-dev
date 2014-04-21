@@ -136,6 +136,12 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
 
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_malformedURI() {
+  DirectoryLinksProvider._fetchAndCacheLinks("some junk")
+    .then(() => do_throw("Malformed URIs should fail"),
+          () => do_print("Failing as expected"));
+});
+
 // to test onManyLinksChanged observer, explicitly bypass setupDirectoryLinksProvider
 add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();

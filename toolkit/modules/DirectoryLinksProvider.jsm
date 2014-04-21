@@ -160,21 +160,26 @@ let DirectoryLinksProvider = {
 
   _fetchAndCacheLinks: function DirectoryLinksProvider_fetchAndCacheLinks(uri) {
     let deferred = Promise.defer();
-
-    NetUtil.asyncFetch(uri, (inputStream, result, request) => {
-      if (Components.isSuccessCode(result)) {
-        let json = NetUtil.readInputStreamToString(inputStream,
-                                                   inputStream.available(),
-                                                   {charset: "UTF-8"});
-        let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
-        OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
-          .then(deferred.resolve, () => deferred.reject("Error writing uri data in profD."));
-      }
-      else {
-        deferred.reject("Error fetching " + uri);
-        Cu.reportError(e);
-      }
-    });
+    try {
+      NetUtil.asyncFetch(uri, (inputStream, result, request) => {
+        if (Components.isSuccessCode(result)) {
+          let json = NetUtil.readInputStreamToString(inputStream,
+                                                     inputStream.available(),
+                                                     {charset: "UTF-8"});
+          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+          OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
+            .then(deferred.resolve, () => deferred.reject("Error writing uri data in profD."));
+        }
+        else {
+          deferred.reject("Error fetching " + uri);
+          Cu.reportError(e);
+        }
+      });
+    }
+    catch (e) {
+      deferred.reject("Error fetching " + uri);
+      Cu.reportError(e);
+    }
     return deferred.promise;
   },
 
