@@ -30,8 +30,8 @@ const kSourceUrlPref = DirectoryLinksProvider._prefs.linksURL;
 var server;
 const kDefaultServerPort = 9000;
 const kBaseUrl = "http://localhost:" + kDefaultServerPort;
-const kExamplePath = "/exampleTest";
-const kFailPath = "/fail";
+const kExamplePath = "/exampleTest/";
+const kFailPath = "/fail/";
 const kExampleSource = kBaseUrl + kExamplePath;
 const kFailSource = kBaseUrl + kFailPath;
 
@@ -116,8 +116,8 @@ function cleanDirectoryLinksProvider() {
 function run_test() {
   // Set up a mock HTTP server to serve a directory page
   server = new HttpServer();
-  server.registerPathHandler(kExamplePath, getHttpHandler(kExamplePath));
-  server.registerPathHandler(kFailPath, getHttpHandler(kFailPath));
+  server.registerPrefixHandler(kExamplePath, getHttpHandler(kExamplePath));
+  server.registerPrefixHandler(kFailPath, getHttpHandler(kFailPath));
   server.start(kDefaultServerPort);
 
   run_next_test();
