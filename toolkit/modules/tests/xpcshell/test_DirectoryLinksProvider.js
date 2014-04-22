@@ -145,9 +145,24 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
 });
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_malformedURI() {
-  DirectoryLinksProvider._fetchAndCacheLinks("some junk")
+  let someJunk = "some junk";
+  DirectoryLinksProvider._fetchAndCacheLinks(someJunk)
     .then(() => do_throw("Malformed URIs should fail"),
-          () => do_print("Failing as expected"));
+          (e) => { do_check_eq(e, "Error fetching " + someJunk) });
+});
+
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_unknownHost() {
+  let nonExistentServer = "http://test";
+  DirectoryLinksProvider._fetchAndCacheLinks(nonExistentServer)
+    .then(() => do_throw("BAD URIs should fail"),
+          (e) => do_check_eq(e, "Fetching " + nonExistentServer + " results in error code: " + Cr.NS_ERROR_UNKNOWN_HOST));
+});
+
+add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() {
+  yield cleanJsonFile();
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kFailSource);
+  let fileObject = yield readJsonFile();
+  isIdentical(fileObject, {});
 });
 
 // to test onManyLinksChanged observer, explicitly bypass setupDirectoryLinksProvider
