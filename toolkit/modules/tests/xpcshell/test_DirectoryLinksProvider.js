@@ -165,7 +165,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() 
   isIdentical(fileObject, {});
 });
 
-// to test onManyLinksChanged observer, explicitly bypass setupDirectoryLinksProvider
+// To test onManyLinksChanged observer, trigger a fetch
 add_task(function test_DirectoryLinksProvider__linkObservers() {
   let deferred = Promise.defer();
   let testObserver = {
@@ -177,7 +177,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
   DirectoryLinksProvider.init();
   DirectoryLinksProvider.addObserver(testObserver);
   do_check_eq(DirectoryLinksProvider._observers.length, 1);
-  setDirectorySourceUrl(kTestSource);
+  DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
 
   yield deferred.promise;
   DirectoryLinksProvider._removeObservers();

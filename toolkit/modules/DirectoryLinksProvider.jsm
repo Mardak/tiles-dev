@@ -104,11 +104,8 @@ let DirectoryLinksProvider = {
   get linkTypes() LINK_TYPES,
 
   observe: function DirectoryLinksProvider_observe(aSubject, aTopic, aData) {
-    if (aTopic == "nsPref:changed") {
-      if (aData == this._prefs["linksURL"]) {
+    if (aTopic == "nsPref:changed" && aData == this._prefs["linksURL"]) {
         delete this.__linksURL;
-      }
-      this._callObservers("onManyLinksChanged");
     }
   },
 
@@ -173,6 +170,7 @@ let DirectoryLinksProvider = {
           let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
           OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
             .then(deferred.resolve, () => deferred.reject("Error writing uri data in profD."));
+          this._callObservers("onManyLinksChanged");
         }
         else {
           deferred.reject("Fetching " + uri + " results in error code: " + result);
