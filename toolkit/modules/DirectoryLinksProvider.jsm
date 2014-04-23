@@ -249,6 +249,20 @@ let DirectoryLinksProvider = {
   },
 
   /**
+   * Submits counts of shown directory links for each type and
+   * triggers directory download if sponsored link was shown
+   *
+   * @param object keyed on types containing counts
+   * @return download promise
+   */
+  reportShownCount: function DirectoryLinksProvider_reportShownCount(directoryCount) {
+    if (directoryCount.sponsored > 0) {
+      return this._fetchDirectoryContent();
+    }
+    return Promise.resolve();
+  },
+
+  /**
    * Gets the current set of directory links.
    * @param aCallback The function that the array of links is passed to.
    */

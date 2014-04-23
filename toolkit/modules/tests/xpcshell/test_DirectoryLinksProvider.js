@@ -326,3 +326,24 @@ add_task(function test_DirectoryLinksProvider_fetchDirectoryOnPrefChange() {
 
   cleanDirectoryLinksProvider();
 });
+
+add_task(function test_DirectoryLinksProvider_fetchDirectoryOnShowCount() {
+  yield promiseSetupDirectoryLinksProvider();
+
+  // set lastdownload to 0 to make DirectoryLinksProvider want to download
+  Services.prefs.setIntPref(kLastDownloadPref, 0);
+  do_check_true(DirectoryLinksProvider._needsDownload());
+
+  // Tell DirectoryLinksProvider that newtab has no room for sponsored links
+  let directoryCount = {sponsored: 0};
+  yield DirectoryLinksProvider.reportShownCount(directoryCount);
+  // the provider must skip download, hence that lastdownload is still 0
+  do_check_eq(Services.prefs.getIntPref(kLastDownloadPref), 0);
+
+  // make room for sponsored links and repeat, download should happen
+  directoryCount.sponsored = 1;
+  yield DirectoryLinksProvider.reportShownCount(directoryCount);
+  do_check_true(Services.prefs.getIntPref(kLastDownloadPref) != 0);
+
+  cleanDirectoryLinksProvider();
+});
