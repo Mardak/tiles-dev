@@ -153,10 +153,10 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_malformedURI() 
 });
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_unknownHost() {
-  let nonExistentServer = "http://test";
+  let nonExistentServer = "http://nosuchhost";
   DirectoryLinksProvider._fetchAndCacheLinks(nonExistentServer)
     .then(() => do_throw("BAD URIs should fail"),
-          (e) => do_check_eq(e, "Fetching " + nonExistentServer + " results in error code: " + Cr.NS_ERROR_UNKNOWN_HOST));
+          (e) => do_check_true(e.startsWith("Fetching " + nonExistentServer + " results in error code: ")));
 });
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() {
