@@ -93,25 +93,16 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   return OS.File.remove(directoryLinksFilePath);
 }
 
-function setDirectorySourceUrl(linksUrl) {
-  if (linksUrl) {
-    Services.prefs.setCharPref(kSourceUrlPref, linksUrl);
-  }
-  else {
-    Services.prefs.clearUserPref(kSourceUrlPref);
-  }
-}
-
 function setupDirectoryLinksProvider(options = {}) {
   DirectoryLinksProvider.init();
   Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
-  setDirectorySourceUrl(options.linksURL || kTestSource);
+  Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestSource);
 }
 
 function cleanDirectoryLinksProvider() {
   DirectoryLinksProvider.reset();
   Services.prefs.clearUserPref(kLocalePref);
-  setDirectorySourceUrl();
+  Services.prefs.clearUserPref(kSourceUrlPref);
 }
 
 function run_test() {
@@ -234,7 +225,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   // 1. _linksURL is properly set after the pref change
   // 2. invalid source url is correctly handled
   let exampleUrl = 'http://example.com/bad';
-  setDirectorySourceUrl(exampleUrl);
+  Services.prefs.setCharPref(kSourceUrlPref, exampleUrl);
   do_check_eq(DirectoryLinksProvider._linksURL, exampleUrl);
 
   let newLinks = yield fetchData();
