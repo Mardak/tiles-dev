@@ -101,8 +101,6 @@ function setupDirectoryLinksProvider(options = {}) {
 
 function cleanDirectoryLinksProvider() {
   DirectoryLinksProvider.reset();
-  Services.prefs.clearUserPref(kLocalePref);
-  Services.prefs.clearUserPref(kSourceUrlPref);
 }
 
 function run_test() {
