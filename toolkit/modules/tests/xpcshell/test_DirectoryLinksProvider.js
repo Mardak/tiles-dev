@@ -45,6 +45,7 @@ function getHttpHandler(path) {
     code = 204;
   }
   return function(aRequest, aResponse) {
+    do_check_eq(aRequest.path, path + DirectoryLinksProvider.locale);
     aResponse.setStatusLine(null, code);
     aResponse.setHeader("Content-Type", "application/json");
     aResponse.write(body);
