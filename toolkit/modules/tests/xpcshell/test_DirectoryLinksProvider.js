@@ -23,8 +23,8 @@ const kSourceData = {"en-US": [{"url":"http://example.com","title":"LocalSource"
 const kTestSource = 'data:application/json,' + JSON.stringify(kSourceData);
 
 // DirectoryLinksProvider preferences
-const kLocalePref = DirectoryLinksProvider._prefs.prefSelectedLocale;
-const kSourceUrlPref = DirectoryLinksProvider._prefs.linksURL;
+const kLocalePref = DirectoryLinksProvider._observedPrefs.prefSelectedLocale;
+const kSourceUrlPref = DirectoryLinksProvider._observedPrefs.linksURL;
 
 // httpd settings
 var server;

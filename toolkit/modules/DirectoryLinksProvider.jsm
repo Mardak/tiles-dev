@@ -51,7 +51,7 @@ let DirectoryLinksProvider = {
 
   _observers: [],
 
-  get _prefs() Object.freeze({
+  get _observedPrefs() Object.freeze({
     linksURL: PREF_DIRECTORY_SOURCE,
     matchOSLocale: PREF_MATCH_OS_LOCALE,
     prefSelectedLocale: PREF_SELECTED_LOCALE,
@@ -60,7 +60,7 @@ let DirectoryLinksProvider = {
   get _linksURL() {
     if (!this.__linksURL) {
       try {
-        this.__linksURL = Services.prefs.getCharPref(this._prefs["linksURL"]);
+        this.__linksURL = Services.prefs.getCharPref(this._observedPrefs["linksURL"]);
       }
       catch (e) {
         Cu.reportError("Error fetching directory links url from prefs: " + e);
@@ -104,21 +104,21 @@ let DirectoryLinksProvider = {
   get linkTypes() LINK_TYPES,
 
   observe: function DirectoryLinksProvider_observe(aSubject, aTopic, aData) {
-    if (aTopic == "nsPref:changed" && aData == this._prefs["linksURL"]) {
+    if (aTopic == "nsPref:changed" && aData == this._observedPrefs["linksURL"]) {
         delete this.__linksURL;
     }
   },
 
   _addPrefsObserver: function DirectoryLinksProvider_addObserver() {
-    for (let pref in this._prefs) {
-      let prefName = this._prefs[pref];
+    for (let pref in this._observedPrefs) {
+      let prefName = this._observedPrefs[pref];
       Services.prefs.addObserver(prefName, this, false);
     }
   },
 
   _removePrefsObserver: function DirectoryLinksProvider_removeObserver() {
-    for (let pref in this._prefs) {
-      let prefName = this._prefs[pref];
+    for (let pref in this._observedPrefs) {
+      let prefName = this._observedPrefs[pref];
       Services.prefs.removeObserver(prefName, this);
     }
   },
