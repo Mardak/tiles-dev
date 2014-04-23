@@ -22,38 +22,6 @@ XPCOMUtils.defineLazyModuleGetter(this, "Promise",
 // The filename where directory links are stored locally
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 
-/**
- * Gets the currently selected locale for display.
- * @return  the selected locale or "en-US" if none is selected
- */
-function getLocale() {
-  let matchOS;
-  try {
-    matchOS = Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE);
-  }
-  catch (e) {}
-
-  if (matchOS) {
-    return Services.locale.getLocaleComponentForUserAgent();
-  }
-
-  try {
-    let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE,
-                                                Ci.nsIPrefLocalizedString);
-    if (locale) {
-      return locale.data;
-    }
-  }
-  catch (e) {}
-
-  try {
-    return Services.prefs.getCharPref(PREF_SELECTED_LOCALE);
-  }
-  catch (e) {}
-
-  return "en-US";
-}
-
 // The preference that tells whether to match the OS locale
 const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
 
@@ -101,6 +69,38 @@ let DirectoryLinksProvider = {
     return this.__linksURL;
   },
 
+  /**
+   * Gets the currently selected locale for display.
+   * @return  the selected locale or "en-US" if none is selected
+   */
+  get locale() {
+    let matchOS;
+    try {
+      matchOS = Services.prefs.getBoolPref(PREF_MATCH_OS_LOCALE);
+    }
+    catch (e) {}
+
+    if (matchOS) {
+      return Services.locale.getLocaleComponentForUserAgent();
+    }
+
+    try {
+      let locale = Services.prefs.getComplexValue(PREF_SELECTED_LOCALE,
+                                                  Ci.nsIPrefLocalizedString);
+      if (locale) {
+        return locale.data;
+      }
+    }
+    catch (e) {}
+
+    try {
+      return Services.prefs.getCharPref(PREF_SELECTED_LOCALE);
+    }
+    catch (e) {}
+
+    return "en-US";
+  },
+
   get linkTypes() LINK_TYPES,
 
   observe: function DirectoryLinksProvider_observe(aSubject, aTopic, aData) {
@@ -136,7 +136,7 @@ let DirectoryLinksProvider = {
             let json = NetUtil.readInputStreamToString(aInputStream,
                                                        aInputStream.available(),
                                                        {charset: "UTF-8"});
-            let locale = getLocale();
+            let locale = this.locale;
             output = JSON.parse(json)[locale];
           }
           catch (e) {
