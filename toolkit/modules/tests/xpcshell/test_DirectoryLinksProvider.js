@@ -31,6 +31,7 @@ const kLastDownloadPref = "browser.newtabpage.directory.lastDownload";
 // app/profile/firefox.js are not avaialble in xpcshell: hence, preset them
 Services.prefs.setCharPref(kLocalePref, "en-US");
 Services.prefs.setCharPref(kSourceUrlPref, kTestSource);
+Services.prefs.setIntPref(kLastDownloadPref, 0);
 
 // httpd settings
 var server;
@@ -119,7 +120,7 @@ function promiseDirectoryDownloadOnPrefChange(pref, newValue) {
 
 function promiseSetupDirectoryLinksProvider(options = {}) {
   return Task.spawn(function() {
-    DirectoryLinksProvider.init();
+    yield DirectoryLinksProvider.init();
     yield promiseDirectoryDownloadOnPrefChange(kLocalePref, options.locale || "en-US");
     yield promiseDirectoryDownloadOnPrefChange(kSourceUrlPref, options.linksURL || kTestSource);
     Services.prefs.setIntPref(kLastDownloadPref, options.lastDownload || 0);
@@ -184,8 +185,11 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() 
 
 // To test onManyLinksChanged observer, trigger a fetch
 add_task(function test_DirectoryLinksProvider__linkObservers() {
+  // avoid download on init by setting lastdownload to now
+  Services.prefs.setIntPref(kLastDownloadPref, Date.now()/1000);
+  yield DirectoryLinksProvider.init();
+
   let testObserver = new LinksChangeObserver();
-  DirectoryLinksProvider.init();
   DirectoryLinksProvider.addObserver(testObserver);
   do_check_eq(DirectoryLinksProvider._observers.length, 1);
   DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
@@ -307,8 +311,9 @@ add_task(function test_DirectoryLinksProvider_fetchDirectoryContent() {
 });
 
 add_task(function test_DirectoryLinksProvider_fetchDirectoryOnPrefChange() {
-  DirectoryLinksProvider.init();
+  // avoid download on init by setting lastdownload to now
   Services.prefs.setIntPref(kLastDownloadPref, Date.now()/1000);
+  yield DirectoryLinksProvider.init();
 
   let testObserver = new LinksChangeObserver();
   DirectoryLinksProvider.addObserver(testObserver);
@@ -347,3 +352,18 @@ add_task(function test_DirectoryLinksProvider_fetchDirectoryOnShowCount() {
 
   cleanDirectoryLinksProvider();
 });
+
+add_task(function test_DirectoryLinksProvider_fetchDirectoryOnInit() {
+  // insure preferences are set to defaults
+  yield promiseSetupDirectoryLinksProvider();
+  // now clean to provider, so we can init it again
+  cleanDirectoryLinksProvider();
+
+  yield cleanJsonFile();
+  yield DirectoryLinksProvider.init();
+  let data = yield readJsonFile();
+  isIdentical(data, kSourceData);
+
+  cleanDirectoryLinksProvider();
+});
+

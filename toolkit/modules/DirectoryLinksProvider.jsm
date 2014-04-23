@@ -279,6 +279,8 @@ let DirectoryLinksProvider = {
 
   init: function DirectoryLinksProvider_init() {
     this._addPrefsObserver();
+    // fecth directory on startup without force
+    return this._fetchDirectoryContent();
   },
 
   /**
