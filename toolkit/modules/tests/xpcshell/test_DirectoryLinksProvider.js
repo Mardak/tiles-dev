@@ -14,6 +14,7 @@ Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/Http.jsm");
 Cu.import("resource://testing-common/httpd.js");
 Cu.import("resource://gre/modules/osfile.jsm")
+Cu.import("resource://gre/modules/Task.jsm");
 
 do_get_profile();
 
@@ -26,6 +27,10 @@ const kTestSource = 'data:application/json,' + JSON.stringify(kSourceData);
 const kLocalePref = DirectoryLinksProvider._observedPrefs.prefSelectedLocale;
 const kSourceUrlPref = DirectoryLinksProvider._observedPrefs.linksURL;
 const kLastDownloadPref = "browser.newtabpage.directory.lastDownload";
+
+// app/profile/firefox.js are not avaialble in xpcshell: hence, preset them
+Services.prefs.setCharPref(kLocalePref, "en-US");
+Services.prefs.setCharPref(kSourceUrlPref, kTestSource);
 
 // httpd settings
 var server;
@@ -94,11 +99,31 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   return OS.File.remove(directoryLinksFilePath);
 }
 
-function setupDirectoryLinksProvider(options = {}) {
-  DirectoryLinksProvider.init();
-  Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
-  Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestSource);
-  Services.prefs.setIntPref(kLastDownloadPref, options.lastDownload || 0);
+function LinksChangeObserver() {
+  this.deferred = Promise.defer();
+  this.onManyLinksChanged = function() {this.deferred.resolve();}.bind(this);
+  this.onDownloadFail = this.onManyLinksChanged;
+}
+
+function promiseDirectoryDownloadOnPrefChange(pref, newValue) {
+  let oldValue = Services.prefs.getCharPref(pref);
+  if (oldValue != newValue) {
+    // only if old and new value differ, setup observer
+    let observer = new LinksChangeObserver();
+    DirectoryLinksProvider.addObserver(observer);
+    Services.prefs.setCharPref(pref, newValue);
+    return observer.deferred.promise;
+  }
+  return Promise.resolve();
+}
+
+function promiseSetupDirectoryLinksProvider(options = {}) {
+  return Task.spawn(function() {
+    DirectoryLinksProvider.init();
+    yield promiseDirectoryDownloadOnPrefChange(kLocalePref, options.locale || "en-US");
+    yield promiseDirectoryDownloadOnPrefChange(kSourceUrlPref, options.linksURL || kTestSource);
+    Services.prefs.setIntPref(kLastDownloadPref, options.lastDownload || 0);
+  });
 }
 
 function cleanDirectoryLinksProvider() {
@@ -159,19 +184,13 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() 
 
 // To test onManyLinksChanged observer, trigger a fetch
 add_task(function test_DirectoryLinksProvider__linkObservers() {
-  let deferred = Promise.defer();
-  let testObserver = {
-    onManyLinksChanged: function() {
-      deferred.resolve();
-    }
-  }
-
+  let testObserver = new LinksChangeObserver();
   DirectoryLinksProvider.init();
   DirectoryLinksProvider.addObserver(testObserver);
   do_check_eq(DirectoryLinksProvider._observers.length, 1);
   DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
 
-  yield deferred.promise;
+  yield testObserver.deferred.promise;
   DirectoryLinksProvider._removeObservers();
   do_check_eq(DirectoryLinksProvider._observers.length, 0);
 
@@ -188,7 +207,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   };
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
-  setupDirectoryLinksProvider({linksURL: dataURI});
+  yield promiseSetupDirectoryLinksProvider({linksURL: dataURI});
   do_check_eq(DirectoryLinksProvider._linksURL, dataURI);
 
   let links;
@@ -213,7 +232,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
 });
 
 add_task(function test_DirectoryLinksProvider__prefObserver_url() {
-  setupDirectoryLinksProvider({linksURL: kTestSource});
+  yield promiseSetupDirectoryLinksProvider({linksURL: kTestSource});
   do_check_eq(DirectoryLinksProvider._linksURL, kTestSource);
 
   let links = yield fetchData();
@@ -225,7 +244,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   // 1. _linksURL is properly set after the pref change
   // 2. invalid source url is correctly handled
   let exampleUrl = 'http://example.com/bad';
-  Services.prefs.setCharPref(kSourceUrlPref, exampleUrl);
+  yield promiseDirectoryDownloadOnPrefChange(kSourceUrlPref, exampleUrl);
   do_check_eq(DirectoryLinksProvider._linksURL, exampleUrl);
 
   let newLinks = yield fetchData();
@@ -235,7 +254,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
 });
 
 add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
-  setupDirectoryLinksProvider({locale: 'zh-CN'});
+  yield promiseSetupDirectoryLinksProvider({locale: 'zh-CN'});
   let links = yield fetchData();
   do_check_eq(links.length, 0);
   cleanDirectoryLinksProvider();
@@ -253,12 +272,12 @@ add_task(function test_DirectoryLinksProvider_needsDownload() {
 });
 
 add_task(function test_DirectoryLinksProvider_fetchDirectoryContent() {
-  setupDirectoryLinksProvider();
-
   yield cleanJsonFile();
+  // explicitly change source url to cause the download during setup
+  yield promiseSetupDirectoryLinksProvider({linksURL: kTestSource+" "});
   yield DirectoryLinksProvider._fetchDirectoryContent();
 
-  // we should have fetched a new file
+  // we should have fetched a new file during setup
   let data = yield readJsonFile();
   isIdentical(data, kSourceData);
 
@@ -278,11 +297,32 @@ add_task(function test_DirectoryLinksProvider_fetchDirectoryContent() {
 
   // make sure that failed download does not corrupt the file, nor changes lastDownload
   lastDownload = Services.prefs.getIntPref(kLastDownloadPref);
-  Services.prefs.setCharPref(kSourceUrlPref, "http://");
+  yield promiseDirectoryDownloadOnPrefChange(kSourceUrlPref, "http://");
   yield DirectoryLinksProvider._fetchDirectoryContent(true);
   data = yield readJsonFile();
   isIdentical(data, kSourceData);
   do_check_eq(Services.prefs.getIntPref(kLastDownloadPref), lastDownload);
+
+  cleanDirectoryLinksProvider();
+});
+
+add_task(function test_DirectoryLinksProvider_fetchDirectoryOnPrefChange() {
+  DirectoryLinksProvider.init();
+  Services.prefs.setIntPref(kLastDownloadPref, Date.now()/1000);
+
+  let testObserver = new LinksChangeObserver();
+  DirectoryLinksProvider.addObserver(testObserver);
+
+  yield cleanJsonFile();
+  // insure that provider does not think it needs to download
+  do_check_false(DirectoryLinksProvider._needsDownload());
+
+  // change the source URL, which should force directory download
+  Services.prefs.setCharPref(kSourceUrlPref, kExampleSource);
+  // then wait for testObserver to fire and test that json is downloaded
+  yield testObserver.deferred.promise;
+  let data = yield readJsonFile();
+  isIdentical(data, kHttpHandlerData[kExamplePath]);
 
   cleanDirectoryLinksProvider();
 });

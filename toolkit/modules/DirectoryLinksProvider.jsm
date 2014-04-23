@@ -64,7 +64,6 @@ let DirectoryLinksProvider = {
     linksURL: PREF_DIRECTORY_SOURCE,
     matchOSLocale: PREF_MATCH_OS_LOCALE,
     prefSelectedLocale: PREF_SELECTED_LOCALE,
-    lastDownload: PREF_DIRECTORY_LASTDOWNLOAD,
   }),
 
   get _linksURL() {
@@ -117,6 +116,8 @@ let DirectoryLinksProvider = {
     if (aTopic == "nsPref:changed" && aData == this._observedPrefs["linksURL"]) {
         delete this.__linksURL;
     }
+    // force directory download on changes to any of the observed prefs
+    this._fetchDirectoryContent(true);
   },
 
   _addPrefsObserver: function DirectoryLinksProvider_addObserver() {
@@ -188,16 +189,19 @@ let DirectoryLinksProvider = {
             },
             () => {
               deferred.reject("Error writing uri data in profD.");
+              this._callObservers("onDownloadFail");
             }
           );
         }
         else {
           deferred.reject("Fetching " + uri + " results in error code: " + result);
+          this._callObservers("onDownloadFail");
         }
       });
     }
     catch (e) {
       deferred.reject("Error fetching " + uri);
+      this._callObservers("onDownloadFail");
       Cu.reportError(e);
     }
     return deferred.promise;
@@ -213,8 +217,8 @@ let DirectoryLinksProvider = {
       return this._downloadPromise;
     }
 
-    this._downloadPromise = Promise.defer();
     if (forceDoanload || this._needsDownload()) {
+      this._downloadPromise = Promise.defer();
       this._fetchAndCacheLinks(this._linksURL).then(() => {
         // the new file was successfully downloaded and cached, so update a timestamp
         Services.prefs.setIntPref(PREF_DIRECTORY_LASTDOWNLOAD, Date.now() / 1000);
@@ -227,12 +231,9 @@ let DirectoryLinksProvider = {
       });
       return this._downloadPromise.promise;
     }
-    else {
-      // download is not needed, resolve and clean the promise
-      this._downloadPromise.resolve();
-      this._downloadPromise = null;
-      return Promise.resolve();
-    }
+
+    // download is not needed
+    return Promise.resolve();
   },
 
   /**
