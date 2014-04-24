@@ -159,9 +159,6 @@ let DirectoryLinksProvider = {
     let deferred = Promise.defer();
     try {
       let channel = NetUtil.newChannel(uri);
-      if (channel instanceof Ci.nsIHttpChannel) {
-        channel = NetUtil.newChannel(uri + this.locale);
-      }
       NetUtil.asyncFetch(channel, (inputStream, result, request) => {
         if (Components.isSuccessCode(result)) {
           let json = "{}";
