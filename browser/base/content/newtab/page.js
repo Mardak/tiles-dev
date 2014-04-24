@@ -29,6 +29,12 @@ let gPage = {
     let link = this._sponsoredPanel.querySelector(".text-link");
     link.addEventListener("click", () => this._sponsoredPanel.hidePopup());
 
+    // Set sponosored panel message
+    let brandBundle =
+        Services.strings.createBundle("chrome://branding/locale/brand.properties");
+    this._sponsoredPanel.textContent =
+        brandBundle.GetStringFromName("sponsoredPanelBrandMessage");
+
     // Check if the new tab feature is enabled.
     let enabled = gAllPages.enabled;
     if (enabled)
