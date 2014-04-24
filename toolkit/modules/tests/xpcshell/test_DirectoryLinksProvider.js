@@ -232,7 +232,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   // tests these 2 things:
   // 1. _linksURL is properly set after the pref change
   // 2. invalid source url is correctly handled
-  let exampleUrl = 'http://example.com/bad';
+  let exampleUrl = 'http://nosuchhost/bad';
   Services.prefs.setCharPref(kSourceUrlPref, exampleUrl);
   do_check_eq(DirectoryLinksProvider._linksURL, exampleUrl);
 
