@@ -155,10 +155,22 @@ let DirectoryLinksProvider = {
     }
   },
 
+  _addRequestBody: function DirectoryLinksProvider_addRequestBody(channel) {
+    if (channel instanceof Ci.nsIHttpChannel) {
+      let payload = Cc["@mozilla.org/io/string-input-stream;1"]
+                      .createInstance(Ci.nsIStringInputStream);
+      let data = "{\"locale\": \"" + this.locale + "\"}";
+      payload.setData(data, data.length);
+      channel.QueryInterface(Ci.nsIUploadChannel).setUploadStream(payload, "application/json", payload.available());
+      channel.requestMethod = "POST";
+    }
+  },
+
   _fetchAndCacheLinks: function DirectoryLinksProvider_fetchAndCacheLinks(uri) {
     let deferred = Promise.defer();
     try {
       let channel = NetUtil.newChannel(uri);
+      this._addRequestBody(channel);
       NetUtil.asyncFetch(channel, (inputStream, result, request) => {
         if (Components.isSuccessCode(result)) {
           let json = "{}";

@@ -7,13 +7,16 @@
  * This file tests the DirectoryLinksProvider singleton in the DirectoryLinksProvider.jsm module.
  */
 
-const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
+const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu, Constructor: CC } = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/DirectoryLinksProvider.jsm");
 Cu.import("resource://gre/modules/Promise.jsm");
 Cu.import("resource://gre/modules/Http.jsm");
 Cu.import("resource://testing-common/httpd.js");
 Cu.import("resource://gre/modules/osfile.jsm")
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "NetUtil",
+  "resource://gre/modules/NetUtil.jsm");
 
 do_get_profile();
 
@@ -38,6 +41,11 @@ const kFailSource = kBaseUrl + kFailPath;
 const kHttpHandlerData = {};
 kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"RemoteSource"}]};
 
+const bodyData = "{\"locale\": \"" + DirectoryLinksProvider.locale + "\"}";
+const BinaryInputStream = CC("@mozilla.org/binaryinputstream;1",
+                              "nsIBinaryInputStream",
+                              "setInputStream");
+
 function getHttpHandler(path) {
   let code = 200;
   let body = JSON.stringify(kHttpHandlerData[path]);
@@ -45,6 +53,9 @@ function getHttpHandler(path) {
     code = 204;
   }
   return function(aRequest, aResponse) {
+    let bodyStream = new BinaryInputStream(aRequest.bodyInputStream);
+    do_check_eq(NetUtil.readInputStreamToString(bodyStream, bodyStream.available()), bodyData);
+
     aResponse.setStatusLine(null, code);
     aResponse.setHeader("Content-Type", "application/json");
     aResponse.write(body);
