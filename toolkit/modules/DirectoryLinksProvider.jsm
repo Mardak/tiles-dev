@@ -29,7 +29,10 @@ const PREF_MATCH_OS_LOCALE = "intl.locale.matchOS";
 const PREF_SELECTED_LOCALE = "general.useragent.locale";
 
 // The preference that tells where to obtain directory links
-const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directorySource";
+const PREF_DIRECTORY_SOURCE = "browser.newtabpage.directory.source";
+
+// last directory download time in seconds
+const PREF_DIRECTORY_LASTDOWNLOAD = "browser.newtabpage.directory.lastDownload";
 
 // The frecency of a directory link
 const DIRECTORY_FRECENCY = 1000;
@@ -50,6 +53,12 @@ let DirectoryLinksProvider = {
   __linksURL: null,
 
   _observers: [],
+
+  // links download promise, resolved upon download completion
+  _downloadPromise: null,
+
+  // download default interval is 24 hours
+  _downloadInterval: 86400,
 
   get _observedPrefs() Object.freeze({
     linksURL: PREF_DIRECTORY_SOURCE,
@@ -107,6 +116,8 @@ let DirectoryLinksProvider = {
     if (aTopic == "nsPref:changed" && aData == this._observedPrefs["linksURL"]) {
         delete this.__linksURL;
     }
+    // force directory download on changes to any of the observed prefs
+    this._fetchDirectoryContent(true);
   },
 
   _addPrefsObserver: function DirectoryLinksProvider_addObserver() {
@@ -178,19 +189,77 @@ let DirectoryLinksProvider = {
             },
             () => {
               deferred.reject("Error writing uri data in profD.");
+              this._callObservers("onDownloadFail");
             }
           );
         }
         else {
           deferred.reject("Fetching " + uri + " results in error code: " + result);
+          this._callObservers("onDownloadFail");
         }
       });
     }
     catch (e) {
       deferred.reject("Error fetching " + uri);
+      this._callObservers("onDownloadFail");
       Cu.reportError(e);
     }
     return deferred.promise;
+  },
+
+  /**
+   * Downloads directory links if needed
+   * @return promise resolved immediately if no download needed, or upon completion
+   */
+  _fetchDirectoryContent: function(forceDoanload=false) {
+    if( this._downloadPromise != null) {
+      // fetching links already - just return the promise
+      return this._downloadPromise;
+    }
+
+    if (forceDoanload || this._needsDownload()) {
+      this._downloadPromise = Promise.defer();
+      this._fetchAndCacheLinks(this._linksURL).then(() => {
+        // the new file was successfully downloaded and cached, so update a timestamp
+        Services.prefs.setIntPref(PREF_DIRECTORY_LASTDOWNLOAD, Date.now() / 1000);
+        this._downloadPromise.resolve();
+        this._downloadPromise = null;
+      },
+      (error) => {
+        this._downloadPromise.resolve();
+        this._downloadPromise = null;
+      });
+      return this._downloadPromise.promise;
+    }
+
+    // download is not needed
+    return Promise.resolve();
+  },
+
+  /**
+   * @return true if download is needed, false otherwise
+   */
+  _needsDownload: function() {
+    // fail if last download occured less then 24 hours ago
+    let lastDownloaded = Services.prefs.getIntPref(PREF_DIRECTORY_LASTDOWNLOAD) * 1000;
+    if ((Date.now() - lastDownloaded) > this._downloadInterval) {
+      return true;
+    }
+    return false;
+  },
+
+  /**
+   * Submits counts of shown directory links for each type and
+   * triggers directory download if sponsored link was shown
+   *
+   * @param object keyed on types containing counts
+   * @return download promise
+   */
+  reportShownCount: function DirectoryLinksProvider_reportShownCount(directoryCount) {
+    if (directoryCount.sponsored > 0) {
+      return this._fetchDirectoryContent();
+    }
+    return Promise.resolve();
   },
 
   /**
@@ -210,6 +279,8 @@ let DirectoryLinksProvider = {
 
   init: function DirectoryLinksProvider_init() {
     this._addPrefsObserver();
+    // fecth directory on startup without force
+    return this._fetchDirectoryContent();
   },
 
   /**
