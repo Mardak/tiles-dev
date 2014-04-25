@@ -29,7 +29,7 @@ let gPage = {
     let link = this._sponsoredPanel.querySelector(".text-link");
     link.addEventListener("click", () => this._sponsoredPanel.hidePopup());
 
-    // Set sponosored panel message
+    // Set the appropriate sponsored panel message for the channel
     this._sponsoredPanel.querySelector("#sponsored-panel-message").textContent =
       Services.strings.createBundle("chrome://branding/locale/brand.properties").
       GetStringFromName("sponsoredPanelBrandMessage");
