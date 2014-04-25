@@ -29,6 +29,11 @@ let gPage = {
     let link = this._sponsoredPanel.querySelector(".text-link");
     link.addEventListener("click", () => this._sponsoredPanel.hidePopup());
 
+    // Set the appropriate sponsored panel message for the channel
+    this._sponsoredPanel.querySelector("#sponsored-panel-message").textContent =
+      Services.strings.createBundle("chrome://branding/locale/brand.properties").
+      GetStringFromName("sponsoredPanelBrandMessage");
+
     // Check if the new tab feature is enabled.
     let enabled = gAllPages.enabled;
     if (enabled)
