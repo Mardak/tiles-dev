@@ -22,8 +22,8 @@ do_get_profile();
 
 const DIRECTORY_LINKS_FILE = "directoryLinks.json";
 const DIRECTORY_FRECENCY = 1000;
-const kSourceData = {"en-US": [{"url":"http://example.com","title":"LocalSource"}]};
-const kTestSource = 'data:application/json,' + JSON.stringify(kSourceData);
+const kURLData = {"en-US": [{"url":"http://example.com","title":"LocalSource"}]};
+const kTestURL = 'data:application/json,' + JSON.stringify(kURLData);
 
 // DirectoryLinksProvider preferences
 const kLocalePref = DirectoryLinksProvider._observedPrefs.prefSelectedLocale;
@@ -35,8 +35,8 @@ const kDefaultServerPort = 9000;
 const kBaseUrl = "http://localhost:" + kDefaultServerPort;
 const kExamplePath = "/exampleTest/";
 const kFailPath = "/fail/";
-const kExampleSource = kBaseUrl + kExamplePath;
-const kFailSource = kBaseUrl + kFailPath;
+const kExampleURL = kBaseUrl + kExamplePath;
+const kFailURL = kBaseUrl + kFailPath;
 
 const kHttpHandlerData = {};
 kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"RemoteSource"}]};
@@ -106,7 +106,7 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
 function setupDirectoryLinksProvider(options = {}) {
   DirectoryLinksProvider.init();
   Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
-  Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestSource);
+  Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestURL);
 }
 
 function cleanDirectoryLinksProvider() {
@@ -131,15 +131,15 @@ function run_test() {
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_local() {
   yield cleanJsonFile();
   // Trigger cache of data or chrome uri files in profD
-  yield DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kTestURL);
   let fileObject = yield readJsonFile();
-  isIdentical(fileObject, kSourceData);
+  isIdentical(fileObject, kURLData);
 });
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
   yield cleanJsonFile();
   // this must trigger directory links json download and save it to cache file
-  yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleSource);
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleURL);
   let fileObject = yield readJsonFile();
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
@@ -160,7 +160,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_unknownHost() {
 
 add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() {
   yield cleanJsonFile();
-  yield DirectoryLinksProvider._fetchAndCacheLinks(kFailSource);
+  yield DirectoryLinksProvider._fetchAndCacheLinks(kFailURL);
   let fileObject = yield readJsonFile();
   isIdentical(fileObject, {});
 });
@@ -177,7 +177,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
   DirectoryLinksProvider.init();
   DirectoryLinksProvider.addObserver(testObserver);
   do_check_eq(DirectoryLinksProvider._observers.length, 1);
-  DirectoryLinksProvider._fetchAndCacheLinks(kTestSource);
+  DirectoryLinksProvider._fetchAndCacheLinks(kTestURL);
 
   yield deferred.promise;
   DirectoryLinksProvider._removeObservers();
@@ -221,8 +221,8 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
 });
 
 add_task(function test_DirectoryLinksProvider__prefObserver_url() {
-  setupDirectoryLinksProvider({linksURL: kTestSource});
-  do_check_eq(DirectoryLinksProvider._linksURL, kTestSource);
+  setupDirectoryLinksProvider({linksURL: kTestURL});
+  do_check_eq(DirectoryLinksProvider._linksURL, kTestURL);
 
   let links = yield fetchData();
   do_check_eq(links.length, 1);
