@@ -186,7 +186,6 @@ let DirectoryLinksProvider = {
 
     try {
       xmlHttp.open('POST', uri);
-      xmlHttp.setRequestHeader("Connection", "close");
       xmlHttp.send(JSON.stringify({ locale: this.locale }));
     } catch (e) {
       deferred.reject("Error fetching " + uri);
