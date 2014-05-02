@@ -135,16 +135,16 @@ add_task(function test_fetchAndCacheLinks_local() {
   yield cleanJsonFile();
   // Trigger cache of data or chrome uri files in profD
   yield DirectoryLinksProvider._fetchAndCacheLinks(kTestURL);
-  let fileObject = yield readJsonFile();
-  isIdentical(fileObject, kURLData);
+  let data = yield readJsonFile();
+  isIdentical(data, kURLData);
 });
 
 add_task(function test_fetchAndCacheLinks_remote() {
   yield cleanJsonFile();
   // this must trigger directory links json download and save it to cache file
   yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleURL);
-  let fileObject = yield readJsonFile();
-  isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
+  let data = yield readJsonFile();
+  isIdentical(data, kHttpHandlerData[kExamplePath]);
 });
 
 add_task(function test_fetchAndCacheLinks_malformedURI() {
@@ -164,8 +164,8 @@ add_task(function test_fetchAndCacheLinks_unknownHost() {
 add_task(function test_fetchAndCacheLinks_non200Status() {
   yield cleanJsonFile();
   yield DirectoryLinksProvider._fetchAndCacheLinks(kFailURL);
-  let fileObject = yield readJsonFile();
-  isIdentical(fileObject, {});
+  let data = yield readJsonFile();
+  isIdentical(data, {});
 });
 
 // To test onManyLinksChanged observer, trigger a fetch
