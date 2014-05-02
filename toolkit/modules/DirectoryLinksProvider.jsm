@@ -9,6 +9,8 @@ this.EXPORTED_SYMBOLS = ["DirectoryLinksProvider"];
 const Ci = Components.interfaces;
 const Cc = Components.classes;
 const Cu = Components.utils;
+const XMLHttpRequest =
+  Components.Constructor("@mozilla.org/xmlextras/xmlhttprequest;1", "nsIXMLHttpRequest");
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
@@ -156,47 +158,37 @@ let DirectoryLinksProvider = {
     }
   },
 
-  _addRequestBody: function DirectoryLinksProvider_addRequestBody(channel) {
-    if (channel instanceof Ci.nsIHttpChannel) {
-      let payload = Cc["@mozilla.org/io/string-input-stream;1"]
-                      .createInstance(Ci.nsIStringInputStream);
-      let data = JSON.stringify({ locale: this.locale });
-      payload.setData(data, data.length);
-      channel.QueryInterface(Ci.nsIUploadChannel).setUploadStream(payload, "application/json", payload.available());
-      channel.requestMethod = "POST";
-    }
-  },
-
   _fetchAndCacheLinks: function DirectoryLinksProvider_fetchAndCacheLinks(uri) {
     let deferred = Promise.defer();
+    let xmlHttp = new XMLHttpRequest();
+    xmlHttp.overrideMimeType("application/json");
+
+    let self = this;
+    xmlHttp.onload = function(aResponse) {
+      let json = this.responseText;
+      if (this.status && this.status != 200) {
+        json = "{}";
+      }
+      let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.localProfileDir, DIRECTORY_LINKS_FILE);
+      OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
+        .then(() => {
+          deferred.resolve();
+          self._callObservers("onManyLinksChanged");
+        },
+        () => {
+          deferred.reject("Error writing uri data in profD.");
+        });
+    };
+
+    xmlHttp.onerror = function(e) {
+      deferred.reject("Fetching " + uri + " results in error code: " + e.target.status);
+    };
+
     try {
-      let channel = NetUtil.newChannel(uri);
-      this._addRequestBody(channel);
-      NetUtil.asyncFetch(channel, (inputStream, result, request) => {
-        if (Components.isSuccessCode(result)) {
-          let json = "{}";
-          if (!(channel instanceof Ci.nsIHttpChannel) || channel.responseStatus == 200) {
-            json = NetUtil.readInputStreamToString(inputStream,
-                                                   inputStream.available(),
-                                                   {charset: "UTF-8"});
-          }
-          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.localProfileDir, DIRECTORY_LINKS_FILE);
-          OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
-            .then(() => {
-              deferred.resolve();
-              this._callObservers("onManyLinksChanged");
-            },
-            () => {
-              deferred.reject("Error writing uri data in profD.");
-            }
-          );
-        }
-        else {
-          deferred.reject("Fetching " + uri + " results in error code: " + result);
-        }
-      });
-    }
-    catch (e) {
+      xmlHttp.open('POST', uri);
+      xmlHttp.setRequestHeader("Connection", "close");
+      xmlHttp.send(JSON.stringify({ locale: this.locale }));
+    } catch (e) {
       deferred.reject("Error fetching " + uri);
       Cu.reportError(e);
     }
