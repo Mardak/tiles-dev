@@ -91,7 +91,7 @@ function fetchData() {
 
 function readJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   let decoder = new TextDecoder();
-  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.localProfileDir, jsonFile);
   return OS.File.read(directoryLinksFilePath).then(array => {
     let json = decoder.decode(array);
     return JSON.parse(json);
@@ -99,7 +99,7 @@ function readJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
 }
 
 function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
-  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, jsonFile);
+  let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.localProfileDir, jsonFile);
   return OS.File.remove(directoryLinksFilePath);
 }
 

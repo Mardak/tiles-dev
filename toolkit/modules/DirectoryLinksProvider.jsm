@@ -180,7 +180,7 @@ let DirectoryLinksProvider = {
                                                    inputStream.available(),
                                                    {charset: "UTF-8"});
           }
-          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.profileDir, DIRECTORY_LINKS_FILE);
+          let directoryLinksFilePath = OS.Path.join(OS.Constants.Path.localProfileDir, DIRECTORY_LINKS_FILE);
           OS.File.writeAtomic(directoryLinksFilePath, json, {tmpPath: directoryLinksFilePath + ".tmp"})
             .then(() => {
               deferred.resolve();
