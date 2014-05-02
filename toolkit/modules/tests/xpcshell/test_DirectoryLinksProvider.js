@@ -105,9 +105,11 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
 
 // All tests that call setupDirectoryLinksProvider() must also call cleanDirectoryLinksProvider().
 function setupDirectoryLinksProvider(options = {}) {
+  let linksURL = options.linksURL || kTestURL;
   DirectoryLinksProvider.init();
   Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
-  Services.prefs.setCharPref(kSourceUrlPref, options.linksURL || kTestURL);
+  Services.prefs.setCharPref(kSourceUrlPref, linksURL);
+  do_check_eq(DirectoryLinksProvider._linksURL, linksURL);
 }
 
 function cleanDirectoryLinksProvider() {
@@ -216,7 +218,6 @@ add_task(function test_linksURL_locale() {
   let dataURI = 'data:application/json,' + JSON.stringify(data);
 
   setupDirectoryLinksProvider({linksURL: dataURI});
-  do_check_eq(DirectoryLinksProvider._linksURL, dataURI);
 
   let links;
   let expected_data;
@@ -241,7 +242,6 @@ add_task(function test_linksURL_locale() {
 
 add_task(function test_prefObserver_url() {
   setupDirectoryLinksProvider({linksURL: kTestURL});
-  do_check_eq(DirectoryLinksProvider._linksURL, kTestURL);
 
   let links = yield fetchData();
   do_check_eq(links.length, 1);
