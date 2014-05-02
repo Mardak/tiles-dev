@@ -103,6 +103,7 @@ function cleanJsonFile(jsonFile = DIRECTORY_LINKS_FILE) {
   return OS.File.remove(directoryLinksFilePath);
 }
 
+// All tests that call setupDirectoryLinksProvider() must also call cleanDirectoryLinksProvider().
 function setupDirectoryLinksProvider(options = {}) {
   DirectoryLinksProvider.init();
   Services.prefs.setCharPref(kLocalePref, options.locale || "en-US");
@@ -111,6 +112,8 @@ function setupDirectoryLinksProvider(options = {}) {
 
 function cleanDirectoryLinksProvider() {
   DirectoryLinksProvider.reset();
+  Services.prefs.clearUserPref(kLocalePref);
+  Services.prefs.clearUserPref(kSourceUrlPref);
 }
 
 function run_test() {
