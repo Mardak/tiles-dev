@@ -41,7 +41,7 @@ const kFailSource = kBaseUrl + kFailPath;
 const kHttpHandlerData = {};
 kHttpHandlerData[kExamplePath] = {"en-US": [{"url":"http://example.com","title":"RemoteSource"}]};
 
-const bodyData = "{\"locale\": \"" + DirectoryLinksProvider.locale + "\"}";
+const bodyData = JSON.stringify({ locale: DirectoryLinksProvider.locale });
 const BinaryInputStream = CC("@mozilla.org/binaryinputstream;1",
                               "nsIBinaryInputStream",
                               "setInputStream");
