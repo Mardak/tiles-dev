@@ -128,7 +128,7 @@ function run_test() {
   });
 }
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_local() {
+add_task(function test_fetchAndCacheLinks_local() {
   yield cleanJsonFile();
   // Trigger cache of data or chrome uri files in profD
   yield DirectoryLinksProvider._fetchAndCacheLinks(kTestURL);
@@ -136,7 +136,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_local() {
   isIdentical(fileObject, kURLData);
 });
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
+add_task(function test_fetchAndCacheLinks_remote() {
   yield cleanJsonFile();
   // this must trigger directory links json download and save it to cache file
   yield DirectoryLinksProvider._fetchAndCacheLinks(kExampleURL);
@@ -144,21 +144,21 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_remote() {
   isIdentical(fileObject, kHttpHandlerData[kExamplePath]);
 });
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_malformedURI() {
+add_task(function test_fetchAndCacheLinks_malformedURI() {
   let someJunk = "some junk";
   DirectoryLinksProvider._fetchAndCacheLinks(someJunk)
     .then(() => do_throw("Malformed URIs should fail"),
           (e) => { do_check_eq(e, "Error fetching " + someJunk) });
 });
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_unknownHost() {
+add_task(function test_fetchAndCacheLinks_unknownHost() {
   let nonExistentServer = "http://nosuchhost";
   DirectoryLinksProvider._fetchAndCacheLinks(nonExistentServer)
     .then(() => do_throw("BAD URIs should fail"),
           (e) => do_check_true(e.startsWith("Fetching " + nonExistentServer + " results in error code: ")));
 });
 
-add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() {
+add_task(function test_fetchAndCacheLinks_non200Status() {
   yield cleanJsonFile();
   yield DirectoryLinksProvider._fetchAndCacheLinks(kFailURL);
   let fileObject = yield readJsonFile();
@@ -166,7 +166,7 @@ add_task(function test_DirectoryLinksProvider_fetchAndCacheLinks_non200Status() 
 });
 
 // To test onManyLinksChanged observer, trigger a fetch
-add_task(function test_DirectoryLinksProvider__linkObservers() {
+add_task(function test_linkObservers() {
   let deferred = Promise.defer();
   let testObserver = {
     onManyLinksChanged: function() {
@@ -186,7 +186,7 @@ add_task(function test_DirectoryLinksProvider__linkObservers() {
   cleanDirectoryLinksProvider();
 });
 
-add_task(function test_DirectoryLinksProvider__linksURL_locale() {
+add_task(function test_linksURL_locale() {
   let data = {
     "en-US": [{url: "http://example.com", title: "US"}],
     "zh-CN": [
@@ -220,7 +220,7 @@ add_task(function test_DirectoryLinksProvider__linksURL_locale() {
   cleanDirectoryLinksProvider();
 });
 
-add_task(function test_DirectoryLinksProvider__prefObserver_url() {
+add_task(function test_prefObserver_url() {
   setupDirectoryLinksProvider({linksURL: kTestURL});
   do_check_eq(DirectoryLinksProvider._linksURL, kTestURL);
 
@@ -242,7 +242,7 @@ add_task(function test_DirectoryLinksProvider__prefObserver_url() {
   cleanDirectoryLinksProvider();
 });
 
-add_task(function test_DirectoryLinksProvider_getLinks_noLocaleData() {
+add_task(function test_getLinks_noLocaleData() {
   setupDirectoryLinksProvider({locale: 'zh-CN'});
   let links = yield fetchData();
   do_check_eq(links.length, 0);
