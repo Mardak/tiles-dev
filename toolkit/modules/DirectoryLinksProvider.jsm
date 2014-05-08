@@ -107,8 +107,11 @@ let DirectoryLinksProvider = {
   get linkTypes() LINK_TYPES,
 
   observe: function DirectoryLinksProvider_observe(aSubject, aTopic, aData) {
-    if (aTopic == "nsPref:changed" && aData == this._observedPrefs["linksURL"]) {
+    if (aTopic == "nsPref:changed") {
+      if (aData == this._observedPrefs["linksURL"]) {
         delete this.__linksURL;
+      }
+      this._callObservers("onManyLinksChanged");
     }
   },
 
@@ -181,7 +184,7 @@ let DirectoryLinksProvider = {
     };
 
     xmlHttp.onerror = function(e) {
-      deferred.reject("Fetching " + uri + " results in error code: " + e.target.status);
+      deferred.reject("Fetching " + uri + " resulted in error code: " + e.target.status);
     };
 
     try {
