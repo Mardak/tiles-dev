@@ -227,6 +227,19 @@ input[type=button] {
   opacity: 0.01;
 }
 
+.sublink {
+  display: -moz-box;
+  width: 233px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#info-panel {
+  padding: 5px;
+  max-width: 243px;
+}
+
 /* SPONSORED PANEL */
 #sponsored-panel {
   width: 330px;
