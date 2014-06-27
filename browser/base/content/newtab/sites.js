@@ -10,6 +10,7 @@
  */
 function Site(aNode, aLink, aLinks) {
   this._node = aNode;
+  this._isHovering = false;
   this._node._newtabSite = this;
 
   this._link = aLink;
@@ -125,7 +126,47 @@ Site.prototype = {
     let title = this.title || url;
     let tooltip = (title == url ? title : title + "\n" + url);
 
+    let panel = document.getElementById("info-panel");
     let link = this._querySelector(".newtab-link");
+
+    panel.addEventListener("mouseleave", (aEvent) => {
+        this._isHovering = false;
+        panel.hidePopup();
+    });
+
+    panel.addEventListener("popupshowing", (aEvent) => {
+      if (!this._isHovering) {
+        return;
+      }
+      let panel = aEvent.originalTarget;
+      panel.innerHTML = "";
+      for (let i = 1; i < this._links.length; i++) {
+        let site = this._links[i];
+        panel.innerHTML += "<a class=\"sublink\" id=\"site" + i + "\">" + site.title + "</a>";
+        let subLink = document.getElementById("site" + i);
+        subLink.setAttribute("title", site.title);
+        subLink.setAttribute("href", site.url);
+      }
+    });
+
+    link.addEventListener("mouseleave", (aEvent) => {
+      if (aEvent.relatedTarget &&
+          aEvent.relatedTarget.className != "sublink") {
+        this._isHovering = false;
+        panel.hidePopup();
+      }
+    });
+
+    link.addEventListener("mouseenter", (aEvent) => {
+      if (this._links.length > 1 &&
+          (this._isHovering == false ||
+          (aEvent.relatedTarget && aEvent.relatedTarget.className != "sublink"))) {
+        panel.hidePopup();
+        this._isHovering = true;
+        panel.openPopup(link, "bottomleft topleft");
+      }
+    });
+
     link.setAttribute("title", tooltip);
     link.setAttribute("href", url);
     this._querySelector(".newtab-title").textContent = title;
