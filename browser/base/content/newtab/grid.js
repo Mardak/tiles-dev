@@ -183,6 +183,29 @@ let gGrid = {
     let links = gLinks.getLinks();
     let length = Math.min(links.length, cells.length);
 
+    let tilesList = []; // An ordered list of domains that point to tile objects.
+    let tiles = {}; // Each tile object is a list of links with the same domain and their summed frecency.
+    for (let i = 0; i < links.length; i++) {
+      if (Object.keys(tiles).length == length) {
+        break;
+      }
+
+      let host = links[i].url;
+      if (host.indexOf("about:") == -1) {
+        let uriObj = Services.io.newURI(host, null, null);
+        host = uriObj.host; // Only non "about:" pages have nsIURI hosts
+        if (host.indexOf("www.") == 0) {
+          host = host.slice(4);
+        }
+      }
+      if (!tiles[host]) {
+        tiles[host] = {"links": [], "frecency": 0};
+        tilesList.push(host);
+      }
+      tiles[host]["links"].push(links[i]);
+      tiles[host]["frecency"] += (links[i].frecency ? links[i].frecency : 0);
+    }
+
     for (let i = 0; i < length; i++) {
       if (links[i])
         this.createSite(links[i], cells[i]);
