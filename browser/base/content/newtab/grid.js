@@ -66,10 +66,10 @@ let gGrid = {
    * @param aCell The cell that will contain the new site.
    * @return The newly created site.
    */
-  createSite: function Grid_createSite(aLink, aCell) {
+  createSite: function Grid_createSite(aLinks, aCell) {
     let node = aCell.node;
     node.appendChild(this._siteFragment.cloneNode(true));
-    return new Site(node.firstElementChild, aLink);
+    return new Site(node.firstElementChild, aLinks[0], aLinks);
   },
 
   /**
@@ -207,8 +207,7 @@ let gGrid = {
     }
 
     for (let i = 0; i < length; i++) {
-      if (links[i])
-        this.createSite(links[i], cells[i]);
+      this.createSite(tiles[tilesList[i]].links, cells[i]);
     }
   },
 

@@ -168,7 +168,7 @@ let gUpdater = {
       batch.push(deferred.promise);
 
       // Create the new site and fade it in.
-      let site = gGrid.createSite(aLinks[aIndex], cells[aIndex]);
+      let site = gGrid.createSite([aLinks[aIndex]], cells[aIndex]); // Temporary. This doesn't fill in using grouped domains
 
       // Set the site's initial opacity to zero.
       site.node.style.opacity = 0;

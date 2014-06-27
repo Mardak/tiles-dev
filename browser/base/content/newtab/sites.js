@@ -8,11 +8,12 @@
  * This class represents a site that is contained in a cell and can be pinned,
  * moved around or deleted.
  */
-function Site(aNode, aLink) {
+function Site(aNode, aLink, aLinks) {
   this._node = aNode;
   this._node._newtabSite = this;
 
   this._link = aLink;
+  this._links = aLinks
 
   this._render();
   this._addEventHandlers();
