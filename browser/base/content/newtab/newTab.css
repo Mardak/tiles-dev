@@ -276,7 +276,7 @@ input[type=button] {
 
 #newtab-search-form {
   display: -moz-box;
-  -moz-box-flex: 1;
+  -moz-box-flex: 5;
   -moz-box-orient: horizontal;
   -moz-box-align: center;
   height: 44px; /* 32 + 6 logo top "padding" + 6 logo bottom "padding" */
