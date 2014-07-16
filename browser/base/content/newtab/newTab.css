@@ -58,9 +58,23 @@ input[type=button] {
   -moz-box-orient: vertical;
 }
 
+#newtab-margin-top {
+  min-height: 50px;
+  max-height: 80px;
+  -moz-box-flex: 1;
+  -moz-box-align: center;
+  -moz-box-pack: center;
+}
+
 #newtab-margin-undo-container {
   display: -moz-box;
   -moz-box-pack: center;
+}
+
+#newtab-margin-bottom {
+  min-height: 40px;
+  max-height: 100px;
+  -moz-box-flex: 1;
 }
 
 #newtab-horizontal-margin {
@@ -83,15 +97,19 @@ input[type=button] {
 }
 
 .newtab-side-margin {
-  min-width: 16px;
+  min-width: 40px;
+  max-width: 300px;
   -moz-box-flex: 1;
 }
 
 /* GRID */
 #newtab-grid {
+  display: -moz-box;
   -moz-box-flex: 5;
-  overflow: hidden;
-  text-align: center;
+  -moz-box-orient: vertical;
+  -moz-box-pack: center;
+  min-width: 600px;
+  min-height: 400px;
   transition: 100ms ease-out;
   transition-property: opacity;
 }
@@ -103,6 +121,14 @@ input[type=button] {
 #newtab-grid[locked],
 #newtab-grid[page-disabled] {
   pointer-events: none;
+}
+
+/* ROWS */
+.newtab-row {
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+  -moz-box-direction: normal;
+  -moz-box-pack: center;
 }
 
 /* CELLS */
@@ -159,7 +185,6 @@ input[type=button] {
   left: 0;
   line-height: 21px;
   right: 0;
-  text-align: start;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -255,6 +280,7 @@ input[type=button] {
 
 #newtab-search-form {
   display: -moz-box;
+  -moz-box-flex: 1;
   -moz-box-orient: horizontal;
   -moz-box-align: center;
   height: 44px; /* 32 + 6 logo top "padding" + 6 logo bottom "padding" */
